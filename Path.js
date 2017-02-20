@@ -24,7 +24,7 @@ function Path(start, end){
       line(this.endNode.x, this.endNode.y, this.startNode.x, this.startNode.y);
     }
     else
-      line(mouseX, mouseY, this.startNode.x, this.startNode.y);
+      line((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
 
     // noFill();
     strokeWeight(1);
@@ -62,7 +62,7 @@ function Path(start, end){
   this.getLength = function(){
     //use muouse position if end point is not yet inserted
     if(this.endNode == undefined){
-      this.length = dist(this.startNode.x, this.startNode.y, mouseX, mouseY);
+      this.length = dist(this.startNode.x, this.startNode.y, (mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor));
     }else{
       this.length = dist(this.startNode.x, this.startNode.y, this.endNode.x, this.endNode.y);
     }
@@ -73,7 +73,7 @@ function Path(start, end){
   this.getAngle = function(){
     //use muouse position if end point is not yet inserted
     if(this.endNode == undefined){
-      this.angle = Math.atan2((mouseY - this.startNode.y),(mouseX - this.startNode.x));
+      this.angle = Math.atan2(((mouseY - translateY) * (1 / scaleFactor) - this.startNode.y),((mouseX - translateX) * (1 / scaleFactor) - this.startNode.x));
     }else {
       this.angle = Math.atan((this.endNode.y - this.startNode.y) / (this.endNode.x - this.startNode.x));
     }
@@ -89,8 +89,8 @@ function Path(start, end){
     beginShape(LINES);
     if(this.endNode == undefined){
       vertex(this.xStartRect1, this.yStartRect1);
-      vertex(mouseX +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  mouseY +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
-      vertex(mouseX -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), mouseY -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+      vertex((mouseX - translateX) * (1 / scaleFactor) +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  (mouseY - translateY) * (1 / scaleFactor) +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+      vertex((mouseX - translateX) * (1 / scaleFactor) -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), (mouseY - translateY) * (1 / scaleFactor) -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
       vertex(this.xStartRect2, this.yStartRect2);
 
 
