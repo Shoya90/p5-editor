@@ -1,6 +1,6 @@
 function Path(start, end){
   this.startNode = start;
-  this.endNode;
+  this.endNode = end || undefined;
   this.started = true;
   this.finished = false;
   this.locked = false;
@@ -16,6 +16,7 @@ function Path(start, end){
   this.xEndRect2;
   this.yEndRect2;
   var nodeSize = 24;
+  this.isDrawing;
 
   this.show = function(){
     strokeWeight(4);
@@ -39,7 +40,15 @@ function Path(start, end){
   }
 
   this.getEndNode = function(){
-    return this.endNode;
+    if(this.endNode == undefined){
+      var tempEndNode = {x: (mouseX - translateX) * (1 / scaleFactor), y:(mouseY - translateY) * (1 / scaleFactor)};
+      this.isDrawing = true;
+      return tempEndNode;
+    }else{
+      this.isDrawing = false;
+      return this.endNode;
+    }
+
   }
 
   this.setEndNode = function(endNode){
