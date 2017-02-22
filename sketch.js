@@ -1,5 +1,5 @@
-var w = 1200;
-var h = 800;
+var w = 800;
+var h = 600;
 var nodeSize = 24;
 var nodes = [];
 var inp;
@@ -67,7 +67,9 @@ function draw() {
   for(var i=0; i<paths.length; i++){
     paths[i].show();
     isInPathRect(paths[i], i);
+    selectPath();
     paths[i].pathRect();
+
 
   }
 
@@ -102,7 +104,7 @@ function mouseIsOverNode(){
             // nodes[i].fill = 153;
             nodes[i].status = false;
           }
-          console.log(nodes[i]);
+          // console.log(nodes[i]);
       }
 
 }
@@ -161,6 +163,12 @@ function getPathsOfNode(node){
     if(paths[i].getStartNode() == node || paths[i].getEndNode() == node){
       pathsOfNode.push(paths[i]);
     }
+  }
+}
+
+function selectPath(){
+  if(mouseIsPressed && overPath != undefined){
+    paths[overPath].select();
   }
 }
 
@@ -345,32 +353,44 @@ function keyPressed() {
   }
   if (keyCode === DELETE) {
 
-      //delete the node from the array
-      nodes.splice(overNow, 1);
-      $("input:text").fadeOut(200);
-      //get the paths connected to this node
-      getPathsOfNode(overNode);
-      //find and delete every path in the array of paths connected to this node (i.e. overNode)
-      for (var i = 0; i < pathsOfNode.length; i++) {
-        for (var j = 0; j < paths.length; j++) {
-          if(paths[j] == pathsOfNode[i])
-            paths.splice(j,1);
+    switch (tool) {
+      case 'node':
+        //delete the node from the array
+        nodes.splice(overNow, 1);
+        $("input:text").fadeOut(200);
+        //get the paths connected to this node
+        getPathsOfNode(overNode);
+        //find and delete every path in the array of paths connected to this node (i.e. overNode)
+        for (var i = 0; i < pathsOfNode.length; i++) {
+          for (var j = 0; j < paths.length; j++) {
+            if(paths[j] == pathsOfNode[i])
+              paths.splice(j,1);
+            }
           }
+
+        //empty the paths conected to the node that got deleted
+        pathsOfNode = [];
+        //current path should be the index of the last path
+        currentPath = paths.length - 1;
+        //if there is no path, flag the first path and current path should be zero as well
+        if(paths.length == 0){
+          firstPath = true;
+          currentPath = 0;
         }
+        break;
 
-      //empty the paths conected to the node that got deleted
-      pathsOfNode = [];
-      //current path should be the index of the last path
-      currentPath = paths.length - 1;
-      //if there is no path, flag the first path and current path should be zero as well
-      if(paths.length == 0){
-        firstPath = true;
-        currentPath = 0;
-      }
-
-      //delete path
-      if(overPath != undefined)
+      case 'path':
+        //delete path
         paths.splice(overPath, 1);
+        currentPath = paths.length - 1;
+        if(paths.length == 0){
+          firstPath = true;
+          currentPath = 0;
+        }
+        break;
+
+    }
+
 
 
   }

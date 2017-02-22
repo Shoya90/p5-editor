@@ -58,6 +58,10 @@ function Path(start, end){
     return this.finished;
   }
 
+  this.select = function(){
+    this.setColor(color(234,33,22));
+  }
+
   //calculate the distance between start and end point
   this.getLength = function(){
     //use muouse position if end point is not yet inserted
