@@ -18,12 +18,12 @@ var dotDist = 5;
 var dd = 0.5;
 var lockAnimDots = true;
 var overPath;
+var scaleFactor = 1.0;
+var translateX = 0.0;
+var translateY = 0.0;
+var hit = false;
+var intersectionNodes = [];
 
-
-function preload(){
-
-
-}
 
 function setup() {
   var c = createCanvas(w, h);
@@ -40,7 +40,10 @@ function setup() {
   $('input:radio[name="r"]').change(
   function(){
       tool = $(this).val();
-      console.log(tool);
+      if(tool == 'move')
+        $('html,body').css('cursor','move');
+      else
+        $('html,body').css('cursor','auto');
   });
 
   //  frameRate(1);
@@ -49,6 +52,11 @@ function setup() {
 
 function draw() {
   background(color(44, 62, 80));
+
+  push();
+  translate(translateX,translateY);
+  scale(scaleFactor);
+  drawGrid();
   // translate(width/2, height/2);
   if(lockAnimDots){
     dotDist += dd;
@@ -58,7 +66,6 @@ function draw() {
       lockAnimDots = true;
   }
 
-
   for(var i=0; i<nodes.length; i++){
     mouseIsOverNode();
     nodes[i].show();
@@ -67,11 +74,15 @@ function draw() {
   for(var i=0; i<paths.length; i++){
     paths[i].show();
     isInPathRect(paths[i], i);
-    selectPath();
     paths[i].pathRect();
 
-
   }
+
+  // for (var i = 0; i < intersectionNodes.length; i++) {
+  //   stroke(156);
+  //   fill(153);
+  //   ellipse(intersectionNodes[i].x,intersectionNodes[i].y, nodeSize, nodeSize);
+  // }
 
   if(!lockAnimDots){
     dotDist -= dd;
@@ -81,32 +92,148 @@ function draw() {
       lockAnimDots = true;
   }
 
-
-
+  pop();
 
 
 }
 
+function findIntersection(){
+
+  if(paths.length >= 2){
+    for (var i = 0; i < paths.length; i++) {
+      for (var j = i; j < paths.length; j++) {
+        if(paths[i] != paths[j]){
+          hit = collideLineLine(paths[i].getStartNode().x,paths[i].getStartNode().y,
+                                paths[i].getEndNode().x,paths[i].getEndNode().y,
+                                paths[j].getStartNode().x, paths[j].getStartNode().y,
+                                paths[j].getEndNode().x,paths[j].getEndNode().y,
+                                true);
+          if(hit.x){
+            // ellipse(hit.x, hit.y, nodeSize, nodeSize);
+            // intersectionNodes.push(hit);
+            if(!isThereNode(hit.x, hit.y)){
+              console.log(paths[i],paths[j]);
+              var isn = paths[i].getStartNode();
+              var ien = paths[i].getEndNode();
+              var jsn = paths[j].getStartNode();
+              var jen = paths[j].getEndNode();
+              var newNode = new Node(hit.x, hit.y, nodes.length);
+              nodes.push(newNode);
+              paths.splice(j,1);
+              currentPath = paths.length - 1;
+              //if there is no path, flag the first path and current path should be zero as well
+              if(paths.length == 0){
+                firstPath = true;
+                currentPath = 0;
+              }
+              paths.splice(i,1);
+              currentPath = paths.length - 1;
+              //if there is no path, flag the first path and current path should be zero as well
+              if(paths.length == 0){
+                firstPath = true;
+                currentPath = 0;
+              }
+              currentNode = newNode;
+              paths.push(new Path(isn, newNode));
+              paths[currentPath].setEndNode(currentNode);
+              paths[currentPath].setFinished();
+              console.log(paths[currentPath].getStartNode().name);
+              currentPath++;
+              firstPath = false;
+              paths.push(new Path(ien, newNode));
+              paths[currentPath].setEndNode(currentNode);
+              paths[currentPath].setFinished();
+              console.log(paths[currentPath].getStartNode().name);
+              currentPath++;
+              paths.push(new Path(jsn, newNode));
+              paths[currentPath].setEndNode(currentNode);
+              paths[currentPath].setFinished();
+              console.log(paths[currentPath].getStartNode().name);
+              currentPath++;
+              paths.push(new Path(jen, newNode));
+              paths[currentPath].setEndNode(currentNode);
+              paths[currentPath].setFinished();
+              console.log(paths[currentPath].getStartNode().name);
+              //empty the currentNode so the path doesn't go on
+              currentNode = {};
+              // currentPath++;
+
+            }
+            continue;
+          }
+        }
+      }
+    }
+  }
+
+}
+
+function isThereNode(x,y){
+  var res;
+  for (var i = 0; i < nodes.length; i++) {
+    if (dist(x, y, nodes[i].x, nodes[i].y) <= (nodeSize)/2) {
+      res = true;
+      break;
+    }else {
+      res = false;
+    }
+  }
+  return res;
+}
+
+
+function mouseWheel(event) {
+  translateX -= mouseX;
+  translateY -= mouseY;
+  var delta = event.wheelDelta > 0 ? 1.05 : event.wheelDelta < 0 ? 1.0/1.05 : 1.0;
+  scaleFactor *= delta;
+  translateX *= delta;
+  translateY *= delta;
+  translateX += mouseX;
+  translateY += mouseY;
+
+}
+
+function drawGrid() {
+	stroke('rgba(111,111,111,.5)');
+	fill(120);
+	for (var x = -height* (1/scaleFactor) * 2; x < width * (1/scaleFactor) * 2; x+=w/20) {
+		line(x, -height * (1/scaleFactor) * 2, x, height * (1/scaleFactor) * 2);
+		// text(Math.floor(map(x,-height* (1/scaleFactor), height * (1/scaleFactor), -h, h)), x+1, 12);
+	}
+	for (var y = -width* (1/scaleFactor) * 2; y < height * (1/scaleFactor) * 2; y+=w/20) {
+		line(-width * (1/scaleFactor) * 2, y, width * (1/scaleFactor) * 2, y);
+		// text(Math.floor(map(y,-width* (1/scaleFactor), width * (1/scaleFactor), -w, w)), 1, y+12);
+	}
+}
+
 function mouseIsOverNode(){
+      var overNIndex = undefined;
       for(var i=0; i<nodes.length; i++){
-          if (mouseX > nodes[i].x-nodeSize && mouseX < nodes[i].x+nodeSize &&
-             mouseY > nodes[i].y-nodeSize && mouseY < nodes[i].y+nodeSize) {
+        //mouseX > nodes[i].x-nodeSize && mouseX < nodes[i].x+nodeSize &&
+        //mouseY > nodes[i].y-nodeSize && mouseY < nodes[i].y+nodeSize
+          if (dist((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes[i].x, nodes[i].y) <= (nodeSize)/2) {
               nodes[i].status = true;
               overNow = i;
               overNode = nodes[i];
+              overNIndex = i;
               if(!nodes[i].locked) {
                 nodes[i].border = 255;
-                // nodes[i].fill = 153;
+                nodes[i].fill = 153;
               }
               calculateDots(nodes[i]);
+              // break;
           } else {
             nodes[i].border = 153;
-            // nodes[i].fill = 153;
+            nodes[i].fill = 153;
             nodes[i].status = false;
+            overNow = undefined;
+            // overNode = {};
           }
-          // console.log(nodes[i]);
       }
-
+      overNow = overNIndex;
+      if(overNow != undefined)
+        overNode = nodes[overNow];
 }
 
 function  calculateDots(node){
@@ -122,17 +249,17 @@ function  calculateDots(node){
 
 function isInPathRect(path, index){
 
-  var distToTopLine = Math.abs((path.xEndRect1 - path.xStartRect1)*(path.yStartRect1 - mouseY)
-  - (path.xStartRect1 - mouseX)*(path.yEndRect1 - path.yStartRect1)) / (Math.sqrt(pow(path.xEndRect1 - path.xStartRect1, 2) + pow(path.yEndRect1 - path.yStartRect1 , 2)));
+  var distToTopLine = Math.abs((path.xEndRect1 - path.xStartRect1)*(path.yStartRect1 - (mouseY - translateY) * (1 / scaleFactor))
+  - (path.xStartRect1 - (mouseX - translateX) * (1 / scaleFactor))*(path.yEndRect1 - path.yStartRect1)) / (Math.sqrt(pow(path.xEndRect1 - path.xStartRect1, 2) + pow(path.yEndRect1 - path.yStartRect1 , 2)));
 
-  var distToBottLine = Math.abs((path.xEndRect2 - path.xStartRect2)*(path.yStartRect2 - mouseY)
-  - (path.xStartRect2 - mouseX)*(path.yEndRect2 - path.yStartRect2)) / (Math.sqrt(pow(path.xEndRect2 - path.xStartRect1, 2) + pow(path.yEndRect2 - path.yStartRect2 , 2)));
+  var distToBottLine = Math.abs((path.xEndRect2 - path.xStartRect2)*(path.yStartRect2 - (mouseY - translateY) * (1 / scaleFactor))
+  - (path.xStartRect2 - (mouseX - translateX) * (1 / scaleFactor))*(path.yEndRect2 - path.yStartRect2)) / (Math.sqrt(pow(path.xEndRect2 - path.xStartRect1, 2) + pow(path.yEndRect2 - path.yStartRect2 , 2)));
 
-  var distToStart = Math.abs((path.xStartRect2 - path.xStartRect1)*(path.yStartRect1 - mouseY)
-  - (path.xStartRect1- mouseX)*(path.yStartRect2 - path.yStartRect1)) / (Math.sqrt(pow(path.xStartRect2 - path.xStartRect1, 2) + pow(path.yStartRect2 - path.yStartRect1 , 2)));
+  var distToStart = Math.abs((path.xStartRect2 - path.xStartRect1)*(path.yStartRect1 - (mouseY - translateY) * (1 / scaleFactor))
+  - (path.xStartRect1- (mouseX - translateX) * (1 / scaleFactor))*(path.yStartRect2 - path.yStartRect1)) / (Math.sqrt(pow(path.xStartRect2 - path.xStartRect1, 2) + pow(path.yStartRect2 - path.yStartRect1 , 2)));
 
-  var distToEnd = Math.abs((path.xEndRect2 - path.xEndRect1)*(path.yEndRect1 - mouseY)
-  - (path.xEndRect2- mouseX)*(path.yEndRect2 - path.yEndRect1)) / (Math.sqrt(pow(path.xEndRect2 - path.xEndRect1, 2) + pow(path.yEndRect2 - path.yEndRect1 , 2)));
+  var distToEnd = Math.abs((path.xEndRect2 - path.xEndRect1)*(path.yEndRect1 - (mouseY - translateY) * (1 / scaleFactor))
+  - (path.xEndRect2- (mouseX - translateX) * (1 / scaleFactor))*(path.yEndRect2 - path.yEndRect1)) / (Math.sqrt(pow(path.xEndRect2 - path.xEndRect1, 2) + pow(path.yEndRect2 - path.yEndRect1 , 2)));
 
   if(distToBottLine <= nodeSize && distToTopLine <= nodeSize &&
     distToStart <= path.getLength() && distToEnd <= path.getLength()){
@@ -163,12 +290,6 @@ function getPathsOfNode(node){
     if(paths[i].getStartNode() == node || paths[i].getEndNode() == node){
       pathsOfNode.push(paths[i]);
     }
-  }
-}
-
-function selectPath(){
-  if(mouseIsPressed && overPath != undefined){
-    paths[overPath].select();
   }
 }
 
@@ -208,19 +329,20 @@ var overOne = false;
             }
             //if mouse is not over any node, but there is at leat one node available, create a new node
             else{
-              nodes.push(new Node(mouseX, mouseY, i));
+              nodes.push(new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), i));
             }
         }
         //create the first node
         else{
-            nodes.push(new Node(mouseX, mouseY, i));
+            nodes.push(new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), i));
         }
       }
       break;
 
     case "path":
+
       //check if mouse is over any node
-      if(currentNodeF && overCanvas){
+      if(currentNodeF && overCanvas && overNow != undefined){
         //if this is the first path
         if(currentPath == 0 && firstPath){
           //start the first path with the current node as start
@@ -234,7 +356,6 @@ var overOne = false;
           if(paths[currentPath].isFinished()){
             //increment currentPath number and start a new path
             currentPath++;
-            console.log("qua deve essere inc: ", currentPath);
             paths.push(new Path(currentNode));
             currentNode = {};
           //if the current path isn't finished yet
@@ -255,9 +376,14 @@ var overOne = false;
           }
         }
       }
+      findIntersection();
       break;
     default:
   }
+
+}
+
+function mapCoordinates(){
 
 }
 
@@ -289,15 +415,26 @@ function mouseMoved(){
 }
 
 function mouseDragged() {
-  dragging = true;
-  $("input:text").hide();
-    for(var i=0; i<nodes.length; i++){
-        if(nodes[i].locked){
-            nodes[i].x = mouseX-nodes[i].xOffset;
-            nodes[i].y = mouseY-nodes[i].yOffset;
-        }
+
+
+    switch (tool) {
+      case 'move':
+        translateX += mouseX - pmouseX;
+        translateY += mouseY - pmouseY;
+        break;
+      case 'node':
+        dragging = true;
+        $("input:text").hide();
+          for(var i=0; i<nodes.length; i++){
+              if(nodes[i].locked){
+                  nodes[i].x = mouseX-nodes[i].xOffset;
+                  nodes[i].y = mouseY-nodes[i].yOffset;
+              }
+          }
+        break;
+
     }
-    // console.log(dragging);
+
 
 }
 
@@ -324,6 +461,19 @@ function mouseReleased() {
   }
 }
 
+function mouseIsOnNode(){
+  if(overNow != undefined){
+    if(dist((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes[overNow].x, nodes[overNow].y) < nodeSize/2){
+      return true;
+    }else {
+      overNow = undefined;
+      return false;
+    }
+  }else {
+    return false;
+  }
+
+}
 
 
 //find the node has the status true i.e. is being hovered
@@ -349,52 +499,76 @@ function keyPressed() {
   }
   if (keyCode === ESCAPE) {
     $("input:text").fadeOut(200);
-
-  }
-  if (keyCode === DELETE) {
-
-    switch (tool) {
-      case 'node':
-        //delete the node from the array
-        nodes.splice(overNow, 1);
-        $("input:text").fadeOut(200);
-        //get the paths connected to this node
-        getPathsOfNode(overNode);
-        //find and delete every path in the array of paths connected to this node (i.e. overNode)
-        for (var i = 0; i < pathsOfNode.length; i++) {
-          for (var j = 0; j < paths.length; j++) {
-            if(paths[j] == pathsOfNode[i])
-              paths.splice(j,1);
-            }
-          }
-
-        //empty the paths conected to the node that got deleted
-        pathsOfNode = [];
-        //current path should be the index of the last path
-        currentPath = paths.length - 1;
-        //if there is no path, flag the first path and current path should be zero as well
-        if(paths.length == 0){
-          firstPath = true;
-          currentPath = 0;
-        }
-        break;
-
-      case 'path':
-        //delete path
-        paths.splice(overPath, 1);
-        currentPath = paths.length - 1;
-        if(paths.length == 0){
-          firstPath = true;
-          currentPath = 0;
-        }
-        break;
-
+    if(paths.length != 0 && !paths[currentPath].isFinished()){
+      paths.splice(currentPath, 1);
+      currentPath = paths.length - 1;
+      //if there is no path, flag the first path and current path should be zero as well
+      if(paths.length == 0){
+        firstPath = true;
+        currentPath = 0;
+      }
     }
 
 
 
   }
+  if (keyCode === DELETE) {
+
+    if(mouseIsOnNode()){
+      //delete the node from the array
+      nodes.splice(overNow, 1);
+      $("input:text").fadeOut(200);
+      //get the paths connected to this node
+      getPathsOfNode(overNode);
+      //find and delete every path in the array of paths connected to this node (i.e. overNode)
+      for (var i = 0; i < pathsOfNode.length; i++) {
+        for (var j = 0; j < paths.length; j++) {
+          if(paths[j] == pathsOfNode[i])
+            paths.splice(j,1);
+          }
+        }
+
+      //empty the paths conected to the node that got deleted
+      pathsOfNode = [];
+      //current path should be the index of the last path
+      currentPath = paths.length - 1;
+      //if there is no path, flag the first path and current path should be zero as well
+      if(paths.length == 0){
+        firstPath = true;
+        currentPath = 0;
+      }
+    }
+      //delete path
+      if(overPath != undefined)
+        paths.splice(overPath, 1);
 
 
+  }
+
+  if (key == 'R') {
+    scaleFactor = 1;
+    translateX = 0.0;
+    translateY = 0.0;
+  }
+
+  if (key == 'N') {
+    $("input:radio[name='r'][value='node']").prop("checked",true);
+    tool = 'node';
+  }
+
+  if (key == 'P') {
+    $("input:radio[name='r'][value='path']").prop("checked",true);
+    tool = 'path';
+  }
+
+  if (key == 'M') {
+    $("input:radio[name='r'][value='move']").prop("checked",true);
+    tool = 'move';
+  }
+
+  if(tool == 'move')
+    $('html,body').css('cursor','move');
+  else
+    $('html,body').css('cursor','auto');
 
 }

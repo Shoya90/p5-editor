@@ -1,6 +1,6 @@
 function Path(start, end){
   this.startNode = start;
-  this.endNode;
+  this.endNode = end || undefined;
   this.started = true;
   this.finished = false;
   this.locked = false;
@@ -16,6 +16,7 @@ function Path(start, end){
   this.xEndRect2;
   this.yEndRect2;
   var nodeSize = 24;
+  this.isDrawing;
 
   this.show = function(){
     strokeWeight(4);
@@ -24,7 +25,7 @@ function Path(start, end){
       line(this.endNode.x, this.endNode.y, this.startNode.x, this.startNode.y);
     }
     else
-      line(mouseX, mouseY, this.startNode.x, this.startNode.y);
+      line((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
 
     // noFill();
     strokeWeight(1);
@@ -39,7 +40,15 @@ function Path(start, end){
   }
 
   this.getEndNode = function(){
-    return this.endNode;
+    if(this.endNode == undefined){
+      var tempEndNode = {x: (mouseX - translateX) * (1 / scaleFactor), y:(mouseY - translateY) * (1 / scaleFactor)};
+      this.isDrawing = true;
+      return tempEndNode;
+    }else{
+      this.isDrawing = false;
+      return this.endNode;
+    }
+
   }
 
   this.setEndNode = function(endNode){
@@ -58,15 +67,11 @@ function Path(start, end){
     return this.finished;
   }
 
-  this.select = function(){
-    this.setColor(color(234,33,22));
-  }
-
   //calculate the distance between start and end point
   this.getLength = function(){
     //use muouse position if end point is not yet inserted
     if(this.endNode == undefined){
-      this.length = dist(this.startNode.x, this.startNode.y, mouseX, mouseY);
+      this.length = dist(this.startNode.x, this.startNode.y, (mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor));
     }else{
       this.length = dist(this.startNode.x, this.startNode.y, this.endNode.x, this.endNode.y);
     }
@@ -77,7 +82,7 @@ function Path(start, end){
   this.getAngle = function(){
     //use muouse position if end point is not yet inserted
     if(this.endNode == undefined){
-      this.angle = Math.atan2((mouseY - this.startNode.y),(mouseX - this.startNode.x));
+      this.angle = Math.atan2(((mouseY - translateY) * (1 / scaleFactor) - this.startNode.y),((mouseX - translateX) * (1 / scaleFactor) - this.startNode.x));
     }else {
       this.angle = Math.atan((this.endNode.y - this.startNode.y) / (this.endNode.x - this.startNode.x));
     }
@@ -93,8 +98,8 @@ function Path(start, end){
     beginShape(LINES);
     if(this.endNode == undefined){
       vertex(this.xStartRect1, this.yStartRect1);
-      vertex(mouseX +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  mouseY +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
-      vertex(mouseX -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), mouseY -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+      vertex((mouseX - translateX) * (1 / scaleFactor) +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  (mouseY - translateY) * (1 / scaleFactor) +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+      vertex((mouseX - translateX) * (1 / scaleFactor) -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), (mouseY - translateY) * (1 / scaleFactor) -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
       vertex(this.xStartRect2, this.yStartRect2);
 
 
