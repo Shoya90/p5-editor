@@ -23,6 +23,8 @@ var translateX = 0.0;
 var translateY = 0.0;
 var hit = false;
 var intersectionNodes = [];
+var deletePaths = [];
+var addPaths = [];
 
 
 function setup() {
@@ -99,73 +101,76 @@ function draw() {
 
 function findIntersection(){
 
+  var counter = 0;
+
   if(paths.length >= 2){
     for (var i = 0; i < paths.length; i++) {
-      for (var j = i; j < paths.length; j++) {
-        if(paths[i] != paths[j]){
+      for (var j = 0; j < paths.length; j++) {
+        if(paths[i] !== paths[j]){
           hit = collideLineLine(paths[i].getStartNode().x,paths[i].getStartNode().y,
                                 paths[i].getEndNode().x,paths[i].getEndNode().y,
                                 paths[j].getStartNode().x, paths[j].getStartNode().y,
                                 paths[j].getEndNode().x,paths[j].getEndNode().y,
                                 true);
-          if(hit.x){
-            // ellipse(hit.x, hit.y, nodeSize, nodeSize);
-            // intersectionNodes.push(hit);
-            if(!isThereNode(hit.x, hit.y)){
-              console.log(paths[i],paths[j]);
-              var isn = paths[i].getStartNode();
-              var ien = paths[i].getEndNode();
-              var jsn = paths[j].getStartNode();
-              var jen = paths[j].getEndNode();
-              var newNode = new Node(hit.x, hit.y, nodes.length);
-              nodes.push(newNode);
-              paths.splice(j,1);
-              currentPath = paths.length - 1;
-              //if there is no path, flag the first path and current path should be zero as well
-              if(paths.length == 0){
-                firstPath = true;
-                currentPath = 0;
-              }
-              paths.splice(i,1);
-              currentPath = paths.length - 1;
-              //if there is no path, flag the first path and current path should be zero as well
-              if(paths.length == 0){
-                firstPath = true;
-                currentPath = 0;
-              }
-              currentNode = newNode;
-              paths.push(new Path(isn, newNode));
-              paths[currentPath].setEndNode(currentNode);
-              paths[currentPath].setFinished();
-              console.log(paths[currentPath].getStartNode().name);
-              currentPath++;
-              firstPath = false;
-              paths.push(new Path(ien, newNode));
-              paths[currentPath].setEndNode(currentNode);
-              paths[currentPath].setFinished();
-              console.log(paths[currentPath].getStartNode().name);
-              currentPath++;
-              paths.push(new Path(jsn, newNode));
-              paths[currentPath].setEndNode(currentNode);
-              paths[currentPath].setFinished();
-              console.log(paths[currentPath].getStartNode().name);
-              currentPath++;
-              paths.push(new Path(jen, newNode));
-              paths[currentPath].setEndNode(currentNode);
-              paths[currentPath].setFinished();
-              console.log(paths[currentPath].getStartNode().name);
-              //empty the currentNode so the path doesn't go on
-              currentNode = {};
-              // currentPath++;
 
-            }
-            continue;
+            if(hit.x && !isThereNode(hit.x, hit.y)){
+
+              console.log(i,j);
+              counter++;
+
+              var newNode = new Node(hit.x, hit.y, nodes.length);
+
+              nodes.push(newNode);
+
+              deletePaths.push(paths[i]);
+
+              // deletePaths.push(paths[j]);
+
+              var lastpath = paths[j];
+
+              addPaths.push({end: paths[i].getStartNode(), start:newNode});
+
+              addPaths.push({end: paths[i].getEndNode(), start:newNode});
+
+              addPaths.push({end: paths[j].getStartNode(), start:newNode});
+
+              addPaths.push({end: paths[j].getEndNode(), start:newNode});
+
+
+
+              paths.pop();
+              paths.push(new Path(newNode, lastpath.getStartNode()));
+
+            // continue;
           }
         }
       }
     }
   }
+}
 
+
+function addIntxPaths(){
+  for (var i = 0; i < addPaths.length; i++) {
+    currentPath++;
+    newPath = new Path(addPaths[i].start,addPaths[i].end);
+    paths.push(newPath);
+    newPath.setEndNode(addPaths[i].end);
+    newPath.setFinished();
+  }
+  addPaths = [];
+}
+
+function deleteOldPaths(){
+  for (var i = 0; i < deletePaths.length; i++) {
+    for (var j = 0; j < paths.length; j++) {
+      if (deletePaths[i] == paths[j]) {
+        paths.splice(j,1);
+        currentPath--;
+      }
+    }
+  }
+  deletePaths = [];
 }
 
 function isThereNode(x,y){
@@ -368,6 +373,9 @@ var overOne = false;
               paths[currentPath].setFinished();
               //empty the currentNode so the path doesn't go on
               currentNode = {};
+              findIntersection();
+              addIntxPaths();
+              deleteOldPaths();
             }else {
               nodes[overNow].setFill = color(231, 76, 60);
               console.log(nodes[overNow].fill, nodes[overNow].name);
@@ -376,7 +384,7 @@ var overOne = false;
           }
         }
       }
-      findIntersection();
+
       break;
     default:
   }
@@ -450,13 +458,17 @@ function mouseReleased() {
       for(var i=0; i<nodes.length; i++){
         nodes[i].locked = false;
         if(nodes[i].status ){
-          inp.position(nodes[i].x, nodes[i].y - 24);
-          $("input:text").fadeIn(200);
-          $("input:text").focus();
+          // inp.position(nodes[i].x, nodes[i].y - 24);
+          // $("input:text").fadeIn(200);
+          // $("input:text").focus();
         }
       }
+      // findIntersection();
+      // addIntxPaths();
+      // deleteOldPaths();
       break;
     case 'path':
+
       break;
   }
 }
