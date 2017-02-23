@@ -21,10 +21,12 @@ var overPath;
 var scaleFactor = 1.0;
 var translateX = 0.0;
 var translateY = 0.0;
-var hit = false;
-var intersectionNodes = [];
-var deletePaths = [];
-var addPaths = [];
+var uArr = [];
+var tArr = [];
+var pathsToDelete = [];
+var lastPathStart;
+var lastPathEnd;
+var lasPathOld = paths[paths.length - 1];
 
 
 function setup() {
@@ -80,11 +82,6 @@ function draw() {
 
   }
 
-  // for (var i = 0; i < intersectionNodes.length; i++) {
-  //   stroke(156);
-  //   fill(153);
-  //   ellipse(intersectionNodes[i].x,intersectionNodes[i].y, nodeSize, nodeSize);
-  // }
 
   if(!lockAnimDots){
     dotDist -= dd;
@@ -99,78 +96,169 @@ function draw() {
 
 }
 
-function findIntersection(){
+//find all the intersections after the new path added
+function findIntersection(path){
+  var thisPath = path || paths[paths.length - 1];
+  for (var i = 0; i < paths.length - 1; i++) {
+    //for every path find it's t and u with the last added path
+    // for (var j = i + 1 ; j < paths.length; j++) {
+      findTU(paths[i], thisPath);
+    // }
 
-  var counter = 0;
+  }
 
-  if(paths.length >= 2){
-    for (var i = 0; i < paths.length; i++) {
-      for (var j = 0; j < paths.length; j++) {
-        if(paths[i] !== paths[j]){
-          hit = collideLineLine(paths[i].getStartNode().x,paths[i].getStartNode().y,
-                                paths[i].getEndNode().x,paths[i].getEndNode().y,
-                                paths[j].getStartNode().x, paths[j].getStartNode().y,
-                                paths[j].getEndNode().x,paths[j].getEndNode().y,
-                                true);
+  //for all the paths, except the last path, cut it on the intersection eith the last path
+  cutOldPath();
 
-            if(hit.x && !isThereNode(hit.x, hit.y)){
+  // if there is a u, intersection on the last path, sort the uArray and cut the last path into right pieces
+  if(uArr.length >= 1){
+    uArr.sortOn('u');
+    cutLastPathToPieces();
+  }
+}
 
-              console.log(i,j);
-              counter++;
+//find t and u
+//every path can be expressed in the form P(a) + (P(b) - P(a))*t, where P(a) is the start node and P(b) is the end node
+//if 0<t<1 then the point is on the line segment, if not the point is on the line but not on the segment
+//the last path is presented as P(1) + (P(2) - P(1))*u , where P(1) is the start node and P(2) is the end node, and the same t for u
+function findTU(p1,p2){
 
-              var newNode = new Node(hit.x, hit.y, nodes.length);
+  //to find the x and y of intersection between the last path and any path we should solve two equations
+  //dom is the determinant which will be the denominator and is the same for u and t
+  var dom = ((p2.getStartNode().y - p2.getEndNode().y) * (p1.getEndNode().x - p1.getStartNode().x) -
+            (p1.getEndNode().y - p1.getStartNode().y) * (p2.getStartNode().x - p2.getEndNode().x));
 
-              nodes.push(newNode);
+  //to prevent division by zero
+  if( dom != 0 ){
+      //numerator for t, which is the determinant resulting from the two equations
+      var bt = ((p2.getStartNode().y - p2.getEndNode().y) * (p2.getStartNode().x - p1.getStartNode().x)-
+                (p2.getStartNode().y - p1.getStartNode().y) * (p2.getStartNode().x - p2.getEndNode().x));
+      var t = bt / dom;
 
-              deletePaths.push(paths[i]);
-
-              // deletePaths.push(paths[j]);
-
-              var lastpath = paths[j];
-
-              addPaths.push({end: paths[i].getStartNode(), start:newNode});
-
-              addPaths.push({end: paths[i].getEndNode(), start:newNode});
-
-              addPaths.push({end: paths[j].getStartNode(), start:newNode});
-
-              addPaths.push({end: paths[j].getEndNode(), start:newNode});
+      //numerator for t, which is the determinant resulting from the two equations
+      var bu = ((p2.getStartNode().y - p1.getStartNode().y) * (p1.getEndNode().x - p1.getStartNode().x)-
+                (p1.getEndNode().y - p1.getStartNode().y) * (p2.getStartNode().x - p1.getStartNode().x));
+      var u = bu / dom;
+  }
 
 
+  //if the intersection is on the both paths
+  if((t > 0 && t < 1) && (u > 0 && u < 1)){
+    //save the start point of the last path, the path we are trying to find intersection with other paths
+    lastPathStart = p2.getStartNode();
 
-              paths.pop();
-              paths.push(new Path(newNode, lastpath.getStartNode()));
+    //calculate the intersection
+    var x = p1.getStartNode().x + (t * (p1.getEndNode().x - p1.getStartNode().x));
+    var y = p1.getStartNode().y + (t * (p1.getEndNode().y - p1.getStartNode().y));
 
-            // continue;
-          }
+    //create and push the intersection node
+    intxNode = new Node(x, y, nodes.length);
+    nodes.push(intxNode);
+
+    //push the new two paths that sould be added later, in place of the old path, into tArray
+    //which are from the satrt of this path to the intersection
+    tArr.push({node1: p1.getStartNode(), node2: intxNode});
+    //and from the intersection to the end node of this path
+    tArr.push({node1: p1.getEndNode(), node2: intxNode});
+
+    //mark this path(p1) as to be deleted later
+    pathsToDelete.push(p1);
+
+    //push into uArray the intersection node and it's u value
+    //u is later used to sort the array
+    uArr.push({node: intxNode, u:u});
+
+    //save the last path's end node
+    lastPathEnd = p2.getEndNode();
+
+  }
+
+}
+
+//sort array based on a key
+Array.prototype.sortOn = function(key){
+    this.sort(function(a, b){
+        if(a[key] < b[key]){
+            return -1;
+        }else if(a[key] > b[key]){
+            return 1;
         }
-      }
+        return 0;
+    });
+}
+
+//delete a selected path
+function deletePath(p){
+  for (var i = 0; i < paths.length; i++) {
+    if(p == paths[i]){
+      paths.splice(i,1);
+      //decrement the current path counter
+      currentPath--;
+      break;
     }
   }
 }
 
-
-function addIntxPaths(){
-  for (var i = 0; i < addPaths.length; i++) {
-    currentPath++;
-    newPath = new Path(addPaths[i].start,addPaths[i].end);
-    paths.push(newPath);
-    newPath.setEndNode(addPaths[i].end);
-    newPath.setFinished();
+//the paths which han ad intersection with the last path, sould be replaced with two path segments
+function cutOldPath() {
+  for (var i = 0; i < tArr.length; i++) {
+      currentPath++;
+      newPath = new Path(tArr[i].node1 , tArr[i].node2);
+      paths.push(newPath);
+      newPath.setEndNode(tArr[i].node2);
+      newPath.setFinished();
   }
-  addPaths = [];
+
+  //delete the old marked paths
+  var i = 0;
+  var len = pathsToDelete.length;
+  while (i < len) {
+    deletePath(pathsToDelete[i]);
+    i++;
+  }
+
+  // empty the tArray and marked paths
+  pathsToDelete = [];
+  tArr = [];
 }
 
-function deleteOldPaths(){
-  for (var i = 0; i < deletePaths.length; i++) {
-    for (var j = 0; j < paths.length; j++) {
-      if (deletePaths[i] == paths[j]) {
-        paths.splice(j,1);
-        currentPath--;
-      }
+//the last must the segmented based on u values which are sorted
+function cutLastPathToPieces(){
+
+  //first draw a path between the startNode of the last path and the node with the laest u
+  currentPath++;
+  newPath = new Path(lastPathStart, uArr[0].node);
+  paths.push(newPath);
+  newPath.setEndNode(uArr[0].node);
+  newPath.setFinished();
+
+  //draw a path between any node based on u, with it's next node
+  for (var i = 0; i < uArr.length - 1; i++) {
+      currentPath++;
+      newPath = new Path(uArr[i].node, uArr[i + 1].node);
+      paths.push(newPath);
+      newPath.setEndNode(uArr[i + 1].node);
+      newPath.setFinished();
+  }
+  //at last draw a path between the endNode of the last path and the node with the most u
+  currentPath++;
+  newPath = new Path(uArr[uArr.length - 1].node, lastPathEnd);
+  paths.push(newPath);
+  newPath.setEndNode(lastPathEnd);
+  newPath.setFinished();
+
+  //empty the uArray for this last path
+  uArr = [];
+
+  //delete the last path
+  for (var i = 0; i < paths.length; i++) {
+    if(paths[i].getStartNode() == lastPathStart && paths[i].getEndNode() == lastPathEnd){
+      paths.splice(i,1);
+      currentPath--;
+      break;
     }
   }
-  deletePaths = [];
+
 }
 
 function isThereNode(x,y){
@@ -374,8 +462,6 @@ var overOne = false;
               //empty the currentNode so the path doesn't go on
               currentNode = {};
               findIntersection();
-              addIntxPaths();
-              deleteOldPaths();
             }else {
               nodes[overNow].setFill = color(231, 76, 60);
               console.log(nodes[overNow].fill, nodes[overNow].name);
@@ -384,16 +470,69 @@ var overOne = false;
           }
         }
       }
+      //the case which user clicks on a path, while is drawing a path
+      //a node is added on the path
+      else if(paths.length >= 1){
+        var newNodeOnPath;
+        var pathNodeAddedOn;
+        for (var i = 0; i < paths.length; i++) {
+          //check if any path is clicked or not
+          isInPathRect(paths[i],i)
+          //if a path is clicked while drawing a path
+          if(overPath != undefined){
+            //save the current position of the mouse (considering scale a translate)
+            newNodeOnPath = new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes.length);
+            //add the new node on the path
+            nodes.push(newNodeOnPath);
+            //save the clicked path
+            pathNodeAddedOn = paths[i];
+
+            //cut the clicked path
+            //first piece
+            currentPath++;
+            newPath = new Path(pathNodeAddedOn.getStartNode(), newNodeOnPath);
+            paths.push(newPath);
+            newPath.setEndNode(newNodeOnPath);
+            newPath.setFinished();
+            //second piece
+            currentPath++;
+            newPath = new Path(newNodeOnPath, pathNodeAddedOn.getEndNode());
+            paths.push(newPath);
+            newPath.setEndNode(pathNodeAddedOn.getEndNode());
+            newPath.setFinished();
+
+            //delete the saved path
+            for (var i = 0; i < paths.length; i++) {
+              if(paths[i].getStartNode() == pathNodeAddedOn.getStartNode() && paths[i].getEndNode() == pathNodeAddedOn.getEndNode()){
+                paths.splice(i,1);
+                currentPath--;
+                break;
+              }
+            }
+
+            //because it was a drawing path and so was not finished, set it as finished
+            for (var i = 0; i < paths.length; i++) {
+              if(!paths[i].isFinished()){
+                paths[i].setEndNode(newNodeOnPath);
+                paths[i].setFinished();
+                //after setting the path as finished, find the potential intersections
+                findIntersection(paths[i]);
+                break;
+              }
+            }
+            //break out of the main loop (find the hovering path)
+            break;
+          }
+        }
+
+      }
 
       break;
-    default:
   }
 
 }
 
-function mapCoordinates(){
 
-}
 
 function isTheSamePath(path, end_node){
   var result;
@@ -463,9 +602,7 @@ function mouseReleased() {
           // $("input:text").focus();
         }
       }
-      // findIntersection();
-      // addIntxPaths();
-      // deleteOldPaths();
+      findIntersection();
       break;
     case 'path':
 
