@@ -14,16 +14,26 @@ function Node(x, y, name){
   this.show = function(){
     stroke(this.border);
     fill(this.getFill());
+
     //setup the node label
     textSize(14);
     text(this.name, this.x - 5 , this.y - nodeSize);
+
     //draw the node
     ellipse(this.x, this.y, nodeSize, nodeSize);
 
+    if(this.locked){
+      this.setFill(color(46, 204, 113));
+      this.setBorder(color(46, 204, 113));
+    }
   }
 
   this.setFill = function(color){
     this.fill = color;
+  }
+
+  this.setBorder = function(border) {
+    this.border = border;
   }
 
   this.getFill = function() {

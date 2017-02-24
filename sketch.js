@@ -27,6 +27,7 @@ var pathsToDelete = [];
 var lastPathStart;
 var lastPathEnd;
 var lasPathOld = paths[paths.length - 1];
+var tempNodes = [];
 
 
 function setup() {
@@ -37,9 +38,9 @@ function setup() {
   inp.id = "name";
   inp.parent("canvasContainer");
   inp.hide();
-  if(!$("input:text").val()) {
-     $("input:text").attr("placeholder", "Give it a name:");
-  }
+  // if(!$("input:text").val()) {
+  //    $("input:text").attr("placeholder", "Give it a name:");
+  // }
   $("input:radio[name='r'][value='node']").prop("checked",true);
   $('input:radio[name="r"]').change(
   function(){
@@ -95,6 +96,7 @@ function draw() {
 
 
 }
+
 
 //find all the intersections after the new path added
 function findIntersection(path){
@@ -290,12 +292,12 @@ function mouseWheel(event) {
 function drawGrid() {
 	stroke('rgba(111,111,111,.5)');
 	fill(120);
-	for (var x = -height* (1/scaleFactor) * 2; x < width * (1/scaleFactor) * 2; x+=w/20) {
-		line(x, -height * (1/scaleFactor) * 2, x, height * (1/scaleFactor) * 2);
+	for (var x = -height* (1/scaleFactor) * 8; x < width * (1/scaleFactor) * 8; x+=w/20) {
+		line(x, -height * (1/scaleFactor) * 8, x, height * (1/scaleFactor) * 8);
 		// text(Math.floor(map(x,-height* (1/scaleFactor), height * (1/scaleFactor), -h, h)), x+1, 12);
 	}
-	for (var y = -width* (1/scaleFactor) * 2; y < height * (1/scaleFactor) * 2; y+=w/20) {
-		line(-width * (1/scaleFactor) * 2, y, width * (1/scaleFactor) * 2, y);
+	for (var y = -width* (1/scaleFactor) * 8; y < height * (1/scaleFactor) * 8; y+=w/20) {
+		line(-width * (1/scaleFactor) * 8, y, width * (1/scaleFactor) * 8, y);
 		// text(Math.floor(map(y,-width* (1/scaleFactor), width * (1/scaleFactor), -w, w)), 1, y+12);
 	}
 }
@@ -303,8 +305,6 @@ function drawGrid() {
 function mouseIsOverNode(){
       var overNIndex = undefined;
       for(var i=0; i<nodes.length; i++){
-        //mouseX > nodes[i].x-nodeSize && mouseX < nodes[i].x+nodeSize &&
-        //mouseY > nodes[i].y-nodeSize && mouseY < nodes[i].y+nodeSize
           if (dist((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes[i].x, nodes[i].y) <= (nodeSize)/2) {
               nodes[i].status = true;
               overNow = i;
@@ -327,12 +327,18 @@ function mouseIsOverNode(){
       overNow = overNIndex;
       if(overNow != undefined)
         overNode = nodes[overNow];
+
+      //TODO:working with right click
+      // if(overNow != undefined && mouseButton == RIGHT){
+      //   ellipse((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor),nodeSize * 4,nodeSize * 4);
+      // }
 }
 
+//dot positions around the node on hover
 function  calculateDots(node){
   var theta = 0;
   var dots = [];
-
+  //use the polar coordinates to go around the node
   for (var theta = 0; theta < 2*PI; theta += PI/8) {
     var dotx = node.x + (nodeSize  + dotDist) * cos(theta);
     var doty = node.y + (- (nodeSize  + dotDist) * sin(theta));
@@ -340,8 +346,10 @@ function  calculateDots(node){
   }
 }
 
+//detect if the mouse is entered into the path rectangle
 function isInPathRect(path, index){
 
+  //calculate the distance to each side of the rectangle
   var distToTopLine = Math.abs((path.xEndRect1 - path.xStartRect1)*(path.yStartRect1 - (mouseY - translateY) * (1 / scaleFactor))
   - (path.xStartRect1 - (mouseX - translateX) * (1 / scaleFactor))*(path.yEndRect1 - path.yStartRect1)) / (Math.sqrt(pow(path.xEndRect1 - path.xStartRect1, 2) + pow(path.yEndRect1 - path.yStartRect1 , 2)));
 
@@ -353,11 +361,16 @@ function isInPathRect(path, index){
 
   var distToEnd = Math.abs((path.xEndRect2 - path.xEndRect1)*(path.yEndRect1 - (mouseY - translateY) * (1 / scaleFactor))
   - (path.xEndRect2- (mouseX - translateX) * (1 / scaleFactor))*(path.yEndRect2 - path.yEndRect1)) / (Math.sqrt(pow(path.xEndRect2 - path.xEndRect1, 2) + pow(path.yEndRect2 - path.yEndRect1 , 2)));
-
+  //if all of the distances are within width and height of the rectangle
   if(distToBottLine <= nodeSize && distToTopLine <= nodeSize &&
     distToStart <= path.getLength() && distToEnd <= path.getLength()){
     path.color = color(39, 174, 96);
     overPath = index;
+    //if we are over a path and not over a node, draw a temp node on the path
+    if(overNow == undefined && tool == 'path'){
+      ellipse((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodeSize, nodeSize);
+    }
+
   }else {
     path.color = 255;
     overPath = undefined;
@@ -378,6 +391,7 @@ function isConnectedToNode(node){
   }
 }
 
+//get all the paths connected to a specific node
 function getPathsOfNode(node){
   for(var i=0; i < paths.length; i++){
     if(paths[i].getStartNode() == node || paths[i].getEndNode() == node){
@@ -400,7 +414,7 @@ var overOne = false;
   switch (tool) {
     case "node":
       //checck if mouse is over canvas and if is being dragged
-      if(overCanvas && !dragging){
+      if(overCanvas && !dragging && mouseButton == LEFT){
         //if there is at least one node
         if(nodes.length > 0) {
             //if mouse is over one node
@@ -477,11 +491,12 @@ var overOne = false;
         var pathNodeAddedOn;
         for (var i = 0; i < paths.length; i++) {
           //check if any path is clicked or not
-          isInPathRect(paths[i],i)
+          isInPathRect(paths[i],i);
           //if a path is clicked while drawing a path
-          if(overPath != undefined){
+          if(overPath != undefined && mouseButton == LEFT){
             //save the current position of the mouse (considering scale a translate)
             newNodeOnPath = new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes.length);
+            tempNodes.push({x: (mouseX - translateX) * (1 / scaleFactor), y:(mouseY - translateY) * (1 / scaleFactor)});
             //add the new node on the path
             nodes.push(newNodeOnPath);
             //save the clicked path
@@ -563,15 +578,14 @@ function mouseMoved(){
 
 function mouseDragged() {
 
-
+    if (mouseButton == CENTER){
+      translateX += mouseX - pmouseX;
+      translateY += mouseY - pmouseY;
+    }
     switch (tool) {
-      case 'move':
-        translateX += mouseX - pmouseX;
-        translateY += mouseY - pmouseY;
-        break;
       case 'node':
         dragging = true;
-        $("input:text").hide();
+        // $("input:text").hide();
           for(var i=0; i<nodes.length; i++){
               if(nodes[i].locked){
                   nodes[i].x = mouseX-nodes[i].xOffset;
@@ -597,12 +611,13 @@ function mouseReleased() {
       for(var i=0; i<nodes.length; i++){
         nodes[i].locked = false;
         if(nodes[i].status ){
+          // findIntersection(pathsOfNode);
           // inp.position(nodes[i].x, nodes[i].y - 24);
           // $("input:text").fadeIn(200);
           // $("input:text").focus();
         }
       }
-      findIntersection();
+
       break;
     case 'path':
 
@@ -640,14 +655,16 @@ function currentNodeF(){
 }
 
 
+
+
 function keyPressed() {
   if (keyCode === ENTER) {
-    nodes[selectedIndex].name = $("input:text").val();
-    $("input:text").val("");
-    $("input:text").fadeOut(200);
+    // nodes[selectedIndex].name = $("input:text").val();
+    // $("input:text").val("");
+    // $("input:text").fadeOut(200);
   }
   if (keyCode === ESCAPE) {
-    $("input:text").fadeOut(200);
+    // $("input:text").fadeOut(200);
     if(paths.length != 0 && !paths[currentPath].isFinished()){
       paths.splice(currentPath, 1);
       currentPath = paths.length - 1;
@@ -666,7 +683,7 @@ function keyPressed() {
     if(mouseIsOnNode()){
       //delete the node from the array
       nodes.splice(overNow, 1);
-      $("input:text").fadeOut(200);
+      // $("input:text").fadeOut(200);
       //get the paths connected to this node
       getPathsOfNode(overNode);
       //find and delete every path in the array of paths connected to this node (i.e. overNode)
@@ -687,12 +704,23 @@ function keyPressed() {
         currentPath = 0;
       }
     }
-      //delete path
-      if(overPath != undefined)
-        paths.splice(overPath, 1);
 
+    //delete path
+    for (var i = 0; i < paths.length; i++) {
+      isInPathRect(paths[i],i);
+      if(overPath != undefined){
+        paths.splice(overPath, 1);
+        currentPath--;
+        if(paths.length == 0){
+          firstPath = true;
+          currentPath = 0;
+        }
+      }
+    }
 
   }
+
+
 
   if (key == 'R') {
     scaleFactor = 1;

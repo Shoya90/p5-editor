@@ -17,6 +17,9 @@ function Path(start, end){
   this.yEndRect2;
   var nodeSize = 24;
   this.isDrawing;
+  this.shift = false;
+  var temp;
+  this.name;
 
   this.show = function(){
     strokeWeight(4);
@@ -24,9 +27,23 @@ function Path(start, end){
     if(this.endNode !== undefined){
       line(this.endNode.x, this.endNode.y, this.startNode.x, this.startNode.y);
     }
-    else
-      line((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
+    //if user is holding shift, draw paths only along the axis
+    else if (keyIsDown('16')) {
 
+      if(temp > 315 || temp < 45){
+        line((mouseX - translateX) * (1 / scaleFactor), this.startNode.y, this.startNode.x, this.startNode.y);
+      }else if (temp > 225 && temp < 315) {
+        line(this.startNode.x, (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
+      }else if (temp > 135 && temp < 225) {
+        line((mouseX - translateX) * (1 / scaleFactor), this.startNode.y, this.startNode.x, this.startNode.y);
+      }else if (temp > 45 && temp < 135) {
+        line(this.startNode.x, (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
+      }
+
+    }
+    else{
+      line((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), this.startNode.x, this.startNode.y);
+    }
     // noFill();
     strokeWeight(1);
   }
@@ -98,9 +115,29 @@ function Path(start, end){
     beginShape(LINES);
     if(this.endNode == undefined){
       vertex(this.xStartRect1, this.yStartRect1);
-      vertex((mouseX - translateX) * (1 / scaleFactor) +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  (mouseY - translateY) * (1 / scaleFactor) +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
-      vertex((mouseX - translateX) * (1 / scaleFactor) -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), (mouseY - translateY) * (1 / scaleFactor) -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
-      vertex(this.xStartRect2, this.yStartRect2);
+      if (keyIsDown('16')) {
+        temp = (this.angle  > 0 ? this.angle  : (2*PI + this.angle )) * 360 / (2*PI);
+
+        if(temp > 315 || temp < 45){
+          vertex((mouseX - translateX) * (1 / scaleFactor),  this.startNode.y -  (nodeSize / 2));
+          vertex((mouseX - translateX) * (1 / scaleFactor), this.startNode.y +  (nodeSize / 2));
+        }else if (temp > 225 && temp < 315) {
+          vertex(this.startNode.x -  (nodeSize / 2),  (mouseY - translateY) * (1 / scaleFactor));
+          vertex(this.startNode.x +  (nodeSize / 2),  (mouseY - translateY) * (1 / scaleFactor));
+        }else if (temp > 135 && temp < 225) {
+          vertex((mouseX - translateX) * (1 / scaleFactor),  this.startNode.y +  (nodeSize / 2));
+          vertex((mouseX - translateX) * (1 / scaleFactor), this.startNode.y -  (nodeSize / 2));
+        }else if (temp > 45 && temp < 135) {
+          vertex(this.startNode.x +  (nodeSize / 2),  (mouseY - translateY) * (1 / scaleFactor));
+          vertex(this.startNode.x -  (nodeSize / 2),  (mouseY - translateY) * (1 / scaleFactor));
+        }
+
+      }else {
+        vertex((mouseX - translateX) * (1 / scaleFactor) +  (nodeSize / 2) * cos((PI/2) - this.getAngle()),  (mouseY - translateY) * (1 / scaleFactor) +  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+        vertex((mouseX - translateX) * (1 / scaleFactor) -  (nodeSize / 2) * cos((PI/2) - this.getAngle()), (mouseY - translateY) * (1 / scaleFactor) -  (nodeSize / 2) * -sin((PI/2) - this.getAngle()));
+      }
+
+    vertex(this.xStartRect2, this.yStartRect2);
 
 
     }else {
@@ -118,13 +155,54 @@ function Path(start, end){
   //calculate the start points for the rectangle
   this.calculateRctsStart = function(){
 
-    //calculate from the angle and path length (the polar coordinates) the x and y offsets
-    //add the start point coordinates to the the offsets
-    this.xStartRect1 = this.startNode.x +  (nodeSize / 2) * cos((PI/2) - this.getAngle());
-    this.yStartRect1 = this.startNode.y +  (nodeSize / 2) * -sin((PI/2) - this.getAngle());
+    if(keyIsDown('16') && this.endNode == undefined){
 
-    this.xStartRect2 = this.startNode.x - (nodeSize / 2) * cos((PI/2) - this.getAngle());
-    this.yStartRect2 = this.startNode.y - (nodeSize / 2) * -sin((PI/2) - this.getAngle());
+      temp = (this.angle  > 0 ? this.angle  : (2*PI + this.angle )) * 360 / (2*PI);
+
+      if(temp > 315 || temp < 45){
+
+        this.xStartRect1 = this.startNode.x;
+        this.yStartRect1 = this.startNode.y -  (nodeSize / 2);
+
+        this.xStartRect2 = this.startNode.x;
+        this.yStartRect2 = this.startNode.y + (nodeSize / 2);
+
+      }else if (temp > 225 && temp < 315) {
+
+        this.xStartRect1 = this.startNode.x - (nodeSize / 2);
+        this.yStartRect1 = this.startNode.y;
+
+        this.xStartRect2 = this.startNode.x +  (nodeSize / 2);
+        this.yStartRect2 = this.startNode.y;
+
+      }else if (temp > 135 && temp < 225) {
+
+        this.xStartRect1 = this.startNode.x;
+        this.yStartRect1 = this.startNode.y +  (nodeSize / 2);
+
+        this.xStartRect2 = this.startNode.x;
+        this.yStartRect2 = this.startNode.y - (nodeSize / 2);
+
+      }else if (temp > 45 && temp < 135) {
+
+        this.xStartRect1 = this.startNode.x + (nodeSize / 2);
+        this.yStartRect1 = this.startNode.y;
+
+        this.xStartRect2 = this.startNode.x -  (nodeSize / 2);
+        this.yStartRect2 = this.startNode.y;
+
+      }
+    }
+    else {
+      //calculate from the angle and path length (the polar coordinates) the x and y offsets
+      //add the start point coordinates to the the offsets
+      this.xStartRect1 = this.startNode.x +  (nodeSize / 2) * cos((PI/2) - this.getAngle());
+      this.yStartRect1 = this.startNode.y +  (nodeSize / 2) * -sin((PI/2) - this.getAngle());
+
+      this.xStartRect2 = this.startNode.x - (nodeSize / 2) * cos((PI/2) - this.getAngle());
+      this.yStartRect2 = this.startNode.y - (nodeSize / 2) * -sin((PI/2) - this.getAngle());
+    }
+
 
   }
 
