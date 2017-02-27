@@ -28,6 +28,7 @@ var lastPathStart;
 var lastPathEnd;
 var lasPathOld = paths[paths.length - 1];
 var tempNodes = [];
+var nodeDragged;
 
 
 function setup() {
@@ -59,10 +60,17 @@ function draw() {
   background(color(44, 62, 80));
 
   push();
+
+  //translate and scale according to zoom and pan variables
   translate(translateX,translateY);
   scale(scaleFactor);
+  //draw the grid
   drawGrid();
-  // translate(width/2, height/2);
+
+  tempNextNode();
+
+  // draw dots around nodes
+  // outgoing
   if(lockAnimDots){
     dotDist += dd;
     if(dotDist >= nodeSize)
@@ -72,18 +80,26 @@ function draw() {
   }
 
   for(var i=0; i<nodes.length; i++){
+    //detect if mouse is over any node
     mouseIsOverNode();
+    //show all nodes
     nodes[i].show();
+
   }
 
   for(var i=0; i<paths.length; i++){
+    //show all paths
     paths[i].show();
+    //detect if mouse is over any path rectangle
     isInPathRect(paths[i], i);
+    //draw the rectangle corresspoding to each pth
     paths[i].pathRect();
 
   }
 
 
+  // draw dots around nodes
+  // ingoing
   if(!lockAnimDots){
     dotDist -= dd;
     if(dotDist <= nodeSize && dotDist >= 5)
@@ -98,18 +114,42 @@ function draw() {
 }
 
 
+function tempNextNode(){
+
+  var x = (mouseX - translateX) * (1 / scaleFactor);
+  var y = (mouseY - translateY) * (1 / scaleFactor);
+
+  if(tool == 'node' && !isThereNode(x, y)){
+      fill(color(255,255,255, .9));
+      text(nodes.length, x - 5, y - nodeSize);
+      ellipse(x, y, nodeSize, nodeSize);
+  }
+
+}
+
+
 //find all the intersections after the new path added
 function findIntersection(path){
   var thisPath = path || paths[paths.length - 1];
-  for (var i = 0; i < paths.length - 1; i++) {
-    //for every path find it's t and u with the last added path
-    // for (var j = i + 1 ; j < paths.length; j++) {
-      findTU(paths[i], thisPath);
-    // }
+  //if an argument is passed, also consider the last path
+  if(path != undefined){
+    for (var i = 0; i < paths.length; i++) {
+      //for every path find it's t and u with the last added path
+        findTU(paths[i], thisPath);
 
+    }
+  }
+  //if argument is not passed, use the last line as the second line, and find the intersection between it and all path
+  else {
+    for (var i = 0; i < paths.length - 1; i++) {
+      //for every path find it's t and u with the last added path
+        findTU(paths[i], thisPath);
+
+    }
   }
 
-  //for all the paths, except the last path, cut it on the intersection eith the last path
+
+  //for all the paths, except the last path, cut it on the intersection with the last path
   cutOldPath();
 
   // if there is a u, intersection on the last path, sort the uArray and cut the last path into right pieces
@@ -118,7 +158,7 @@ function findIntersection(path){
     cutLastPathToPieces();
   }
 }
-
+var tempC = [];
 //find t and u
 //every path can be expressed in the form P(a) + (P(b) - P(a))*t, where P(a) is the start node and P(b) is the end node
 //if 0<t<1 then the point is on the line segment, if not the point is on the line but not on the segment
@@ -143,19 +183,20 @@ function findTU(p1,p2){
       var u = bu / dom;
   }
 
+  //calculate the intersection
+  var x = p1.getStartNode().x + (t * (p1.getEndNode().x - p1.getStartNode().x));
+  var y = p1.getStartNode().y + (t * (p1.getEndNode().y - p1.getStartNode().y));
 
-  //if the intersection is on the both paths
-  if((t > 0 && t < 1) && (u > 0 && u < 1)){
+  //if the intersection is on the both paths and the is not another node on the same x and y
+  if((t > 0 && t < 1) && (u > 0 && u < 1) && !isThereNode(x,y)){
     //save the start point of the last path, the path we are trying to find intersection with other paths
     lastPathStart = p2.getStartNode();
-
-    //calculate the intersection
-    var x = p1.getStartNode().x + (t * (p1.getEndNode().x - p1.getStartNode().x));
-    var y = p1.getStartNode().y + (t * (p1.getEndNode().y - p1.getStartNode().y));
 
     //create and push the intersection node
     intxNode = new Node(x, y, nodes.length);
     nodes.push(intxNode);
+    tempC.push(intxNode);
+    console.log(intxNode);
 
     //push the new two paths that sould be added later, in place of the old path, into tArray
     //which are from the satrt of this path to the intersection
@@ -263,6 +304,7 @@ function cutLastPathToPieces(){
 
 }
 
+//function to know if there is a node on a given x and y
 function isThereNode(x,y){
   var res;
   for (var i = 0; i < nodes.length; i++) {
@@ -276,11 +318,13 @@ function isThereNode(x,y){
   return res;
 }
 
-
+//function for handling zoom
 function mouseWheel(event) {
   translateX -= mouseX;
   translateY -= mouseY;
+  //if scroll up => scale set delta as 1.05, if scroll down, set it to 1/1.05
   var delta = event.wheelDelta > 0 ? 1.05 : event.wheelDelta < 0 ? 1.0/1.05 : 1.0;
+  //mult delta to scale factor
   scaleFactor *= delta;
   translateX *= delta;
   translateY *= delta;
@@ -368,9 +412,10 @@ function isInPathRect(path, index){
     overPath = index;
     //if we are over a path and not over a node, draw a temp node on the path
     if(overNow == undefined && tool == 'path'){
+      fill(color(153,153,153, .6));
+      text(nodes.length,(mouseX - translateX) * (1 / scaleFactor) - 5,(mouseY - translateY) * (1 / scaleFactor) - nodeSize);
       ellipse((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodeSize, nodeSize);
     }
-
   }else {
     path.color = 255;
     overPath = undefined;
@@ -438,6 +483,7 @@ var overOne = false;
             else{
               nodes.push(new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), i));
             }
+
         }
         //create the first node
         else{
@@ -484,9 +530,10 @@ var overOne = false;
           }
         }
       }
-      //the case which user clicks on a path, while is drawing a path
+      //the case which user clicks on a path, while is drawing a path, or just wants to start a new path from an old path
       //a node is added on the path
       else if(paths.length >= 1){
+
         var newNodeOnPath;
         var pathNodeAddedOn;
         for (var i = 0; i < paths.length; i++) {
@@ -494,6 +541,7 @@ var overOne = false;
           isInPathRect(paths[i],i);
           //if a path is clicked while drawing a path
           if(overPath != undefined && mouseButton == LEFT){
+
             //save the current position of the mouse (considering scale a translate)
             newNodeOnPath = new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), nodes.length);
             tempNodes.push({x: (mouseX - translateX) * (1 / scaleFactor), y:(mouseY - translateY) * (1 / scaleFactor)});
@@ -535,6 +583,13 @@ var overOne = false;
                 break;
               }
             }
+
+            //third piece
+            currentPath++;
+            newPath = new Path(newNodeOnPath);
+            paths.push(newPath);
+
+
             //break out of the main loop (find the hovering path)
             break;
           }
@@ -548,7 +603,8 @@ var overOne = false;
 }
 
 
-
+//check if the path (that is to be added), already exists or not
+//even it exists in the opposite direction, considered to be existing the same path
 function isTheSamePath(path, end_node){
   var result;
   for (var i = 0; i < paths.length; i++) {
@@ -567,6 +623,7 @@ function isTheSamePath(path, end_node){
 
 }
 
+//check if the mouse is over canvas or not
 function mouseMoved(){
   if(mouseX < w && mouseY < h){
     overCanvas = true;
@@ -584,14 +641,19 @@ function mouseDragged() {
     }
     switch (tool) {
       case 'node':
-        dragging = true;
-        // $("input:text").hide();
+
+          dragging = true;
+          // $("input:text").hide();
           for(var i=0; i<nodes.length; i++){
               if(nodes[i].locked){
                   nodes[i].x = mouseX-nodes[i].xOffset;
                   nodes[i].y = mouseY-nodes[i].yOffset;
+                  nodeDragged = nodes[i];
               }
           }
+
+
+
         break;
 
     }
@@ -607,16 +669,22 @@ function mouseReleased() {
 
   switch(tool){
     case 'node':
+
       dragging = false;
       for(var i=0; i<nodes.length; i++){
         nodes[i].locked = false;
         if(nodes[i].status ){
-          // findIntersection(pathsOfNode);
           // inp.position(nodes[i].x, nodes[i].y - 24);
           // $("input:text").fadeIn(200);
           // $("input:text").focus();
         }
       }
+
+      getPathsOfNode(nodeDragged);
+      pathsOfNode.forEach(function(path){
+        findIntersection(path);
+      });
+      pathsOfNode = [];
 
       break;
     case 'path':
