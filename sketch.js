@@ -158,7 +158,6 @@ function findIntersection(path){
     cutLastPathToPieces();
   }
 }
-var tempC = [];
 //find t and u
 //every path can be expressed in the form P(a) + (P(b) - P(a))*t, where P(a) is the start node and P(b) is the end node
 //if 0<t<1 then the point is on the line segment, if not the point is on the line but not on the segment
@@ -195,8 +194,6 @@ function findTU(p1,p2){
     //create and push the intersection node
     intxNode = new Node(x, y, nodes.length);
     nodes.push(intxNode);
-    tempC.push(intxNode);
-    console.log(intxNode);
 
     //push the new two paths that sould be added later, in place of the old path, into tArray
     //which are from the satrt of this path to the intersection
@@ -801,7 +798,7 @@ function keyPressed() {
     tool = 'node';
   }
 
-  if (key == 'P') {
+  if (key == 'B') {
     $("input:radio[name='r'][value='path']").prop("checked",true);
     tool = 'path';
   }
