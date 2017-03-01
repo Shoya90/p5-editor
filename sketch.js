@@ -29,6 +29,7 @@ var lastPathEnd;
 var lasPathOld = paths[paths.length - 1];
 var tempNodes = [];
 var nodeDragged;
+var selecting = false;
 
 
 function setup() {
@@ -83,6 +84,22 @@ function draw() {
     //detect if mouse is over any node
     mouseIsOverNode();
     //show all nodes
+
+
+    if(selecting){
+      if((nodes[i].x > x_sel_start && nodes[i].x < x_sel_end && nodes[i].y > y_sel_start && nodes[i].y < y_sel_end)
+        ||
+        (nodes[i].x > x_sel_end && nodes[i].x < x_sel_start && nodes[i].y > y_sel_start && nodes[i].y < y_sel_end)
+        ||
+        (nodes[i].x > x_sel_end && nodes[i].x < x_sel_start && nodes[i].y > y_sel_end && nodes[i].y < y_sel_start)
+        ||
+        (nodes[i].x > x_sel_start && nodes[i].x < x_sel_end && nodes[i].y > y_sel_end && nodes[i].y < y_sel_start)
+      ){
+        nodes[i].setFill(color(46, 204, 113));
+        nodes[i].setBorder(color(46, 204, 113));
+      }
+    }
+
     nodes[i].show();
 
   }
@@ -97,6 +114,10 @@ function draw() {
 
   }
 
+  if(selecting){
+    fill(color('rgba(153,153,153,.3)'));
+    rect(x_sel_start, y_sel_start, x_sel_end - x_sel_start, y_sel_end - y_sel_start);
+  }
 
   // draw dots around nodes
   // ingoing
@@ -442,6 +463,11 @@ function getPathsOfNode(node){
   }
 }
 
+var x_sel_start;
+var x_sel_end;
+var y_sel_start;
+var y_sel_end;
+
 function mousePressed() {
 
 var overOne = false;
@@ -454,6 +480,16 @@ var overOne = false;
 
   //check the selected tool
   switch (tool) {
+    case "select":
+      if(!selecting){
+        x_sel_start = (mouseX - translateX) * (1 / scaleFactor);
+        y_sel_start = (mouseY - translateY) * (1 / scaleFactor);
+        x_sel_end = x_sel_start;
+        y_sel_end = y_sel_start;
+        selecting = true;
+      }
+      break;
+
     case "node":
       //checck if mouse is over canvas and if is being dragged
       if(overCanvas && !dragging && mouseButton == LEFT){
@@ -517,11 +553,15 @@ var overOne = false;
               paths[currentPath].setEndNode(currentNode);
               paths[currentPath].setFinished();
               //empty the currentNode so the path doesn't go on
-              currentNode = {};
+              // currentNode = {};
               findIntersection();
+              //start the new path from currently created node
+              currentPath++;
+              newPath = new Path(currentNode);
+              paths.push(newPath);
+
             }else {
               nodes[overNow].setFill = color(231, 76, 60);
-              console.log(nodes[overNow].fill, nodes[overNow].name);
             }
 
           }
@@ -653,6 +693,11 @@ function mouseDragged() {
 
         break;
 
+      case "select":
+        x_sel_end = (mouseX - translateX) * (1 / scaleFactor);
+        y_sel_end = (mouseY - translateY) * (1 / scaleFactor);
+        break;
+
     }
 
 
@@ -684,8 +729,8 @@ function mouseReleased() {
       pathsOfNode = [];
 
       break;
-    case 'path':
-
+    case 'select':
+      selecting = false;
       break;
   }
 }
@@ -798,9 +843,14 @@ function keyPressed() {
     tool = 'node';
   }
 
-  if (key == 'B') {
+  if (key == 'P') {
     $("input:radio[name='r'][value='path']").prop("checked",true);
     tool = 'path';
+  }
+
+  if (key == 'S') {
+    $("input:radio[name='r'][value='select']").prop("checked",true);
+    tool = 'select';
   }
 
   if (key == 'M') {
