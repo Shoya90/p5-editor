@@ -13,6 +13,12 @@ function Node(x, y, name){
 
   this.show = function(){
     stroke(this.border);
+
+
+    if(this.locked){
+      this.setFill(color(46, 204, 113));
+    }
+
     fill(this.getFill());
 
     //setup the node label
@@ -22,10 +28,6 @@ function Node(x, y, name){
     //draw the node
     ellipse(this.x, this.y, nodeSize, nodeSize);
 
-    if(this.locked){
-      this.setFill(color(46, 204, 113));
-      this.setBorder(color(46, 204, 113));
-    }
   }
 
   this.setFill = function(color){
@@ -34,6 +36,14 @@ function Node(x, y, name){
 
   this.setBorder = function(border) {
     this.border = border;
+  }
+
+  this.lock = function(){
+    this.locked = true;
+  }
+
+  this.unlock = function(){
+    this.locked = false;
   }
 
   this.getFill = function() {

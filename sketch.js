@@ -30,6 +30,11 @@ var lasPathOld = paths[paths.length - 1];
 var tempNodes = [];
 var nodeDragged;
 var selecting = false;
+var x_sel_start;
+var x_sel_end;
+var y_sel_start;
+var y_sel_end;
+
 
 
 function setup() {
@@ -85,7 +90,7 @@ function draw() {
     mouseIsOverNode();
     //show all nodes
 
-
+    //if a node is in the selection area, lock it
     if(selecting){
       if((nodes[i].x > x_sel_start && nodes[i].x < x_sel_end && nodes[i].y > y_sel_start && nodes[i].y < y_sel_end)
         ||
@@ -95,8 +100,10 @@ function draw() {
         ||
         (nodes[i].x > x_sel_start && nodes[i].x < x_sel_end && nodes[i].y > y_sel_end && nodes[i].y < y_sel_start)
       ){
-        nodes[i].setFill(color(46, 204, 113));
-        nodes[i].setBorder(color(46, 204, 113));
+        nodes[i].lock();
+      }
+      else{
+        nodes[i].unlock();
       }
     }
 
@@ -463,10 +470,20 @@ function getPathsOfNode(node){
   }
 }
 
-var x_sel_start;
-var x_sel_end;
-var y_sel_start;
-var y_sel_end;
+
+function LockCount(){
+var locked_count = 0;
+  for (var i = 0; i < nodes.length; i++) {
+    if(nodes[i].locked){
+      locked_count++;
+    }
+  }
+  return locked_count;
+}
+
+function functionName() {
+
+}
 
 function mousePressed() {
 
@@ -487,6 +504,9 @@ var overOne = false;
         x_sel_end = x_sel_start;
         y_sel_end = y_sel_start;
         selecting = true;
+      }
+      if(dragging){
+        console.log('drag');
       }
       break;
 
@@ -512,10 +532,16 @@ var overOne = false;
                     nodes[i].yOffset = mouseY-nodes[i].y;
                 }
             }
-            //if mouse is not over any node, but there is at leat one node available, create a new node
-            else{
+
+            else if (LockCount() <= 1) {
               nodes.push(new Node((mouseX - translateX) * (1 / scaleFactor), (mouseY - translateY) * (1 / scaleFactor), i));
             }
+
+            else if (LockCount() > 1) {
+              console.log(LockCount());
+            }
+            //if mouse is not over any node, but there is at leat one node available, create a new node
+
 
         }
         //create the first node
@@ -669,7 +695,8 @@ function mouseMoved(){
     overCanvas = false;
   }
 }
-
+var x_sel_drag;
+var y_sel_drag;
 function mouseDragged() {
 
     if (mouseButton == CENTER){
@@ -678,17 +705,28 @@ function mouseDragged() {
     }
     switch (tool) {
       case 'node':
-
           dragging = true;
+          console.log(LockCount());
           // $("input:text").hide();
-          for(var i=0; i<nodes.length; i++){
-              if(nodes[i].locked){
-                  nodes[i].x = mouseX-nodes[i].xOffset;
-                  nodes[i].y = mouseY-nodes[i].yOffset;
-                  nodeDragged = nodes[i];
-              }
-          }
+          if(LockCount() > 1){
 
+            for(var i=0; i<nodes.length; i++){
+                if(nodes[i].locked){
+                  x_sel_drag = mouseX - nodes[i].xOffset;
+                  y_sel_drag = mouseY - nodes[i].yOffset;
+                  break;
+                }
+            }
+
+          }else {
+            for(var i=0; i<nodes.length; i++){
+                if(nodes[i].locked){
+                    nodes[i].x = mouseX - nodes[i].xOffset;
+                    nodes[i].y = mouseY - nodes[i].yOffset;
+                    nodeDragged = nodes[i];
+                }
+            }
+          }
 
 
         break;
@@ -700,6 +738,7 @@ function mouseDragged() {
 
     }
 
+// dragging = true;
 
 }
 
@@ -711,7 +750,12 @@ function mouseReleased() {
 
   switch(tool){
     case 'node':
-
+    // for(var i=0; i<nodes.length; i++){
+    //     if(nodes[i].locked){
+    //       nodes[i].x = x_sel_drag + nodes[i].xOffset;
+    //       nodes[i].y = y_sel_drag + nodes[i].yOffset;
+    //     }
+    // }
       dragging = false;
       for(var i=0; i<nodes.length; i++){
         nodes[i].locked = false;
@@ -730,6 +774,12 @@ function mouseReleased() {
 
       break;
     case 'select':
+
+      mouseIsOverNode();
+      if(overNow){
+        console.log(overNow);
+      }
+
       selecting = false;
       break;
   }
@@ -814,6 +864,32 @@ function keyPressed() {
         currentPath = 0;
       }
     }
+
+    //TODO: delete more than one at a time
+    else if (LockCount() > 1) {
+
+      for (var i = 0; i < nodes.length; i++) {
+        if(nodes[i].locked){
+          nodes.splice(nodes[i], 1);
+          getPathsOfNode(nodes[i]);
+          for (var i = 0; i < pathsOfNode.length; i++) {
+            for (var j = 0; j < paths.length; j++) {
+              if(paths[j] == pathsOfNode[i])
+                paths.splice(j,1);
+              }
+            }
+
+          pathsOfNode = [];
+          currentPath = paths.length - 1;
+          if(paths.length == 0){
+            firstPath = true;
+            currentPath = 0;
+          }
+        }
+      }
+
+    }
+
 
     //delete path
     for (var i = 0; i < paths.length; i++) {
