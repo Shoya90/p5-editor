@@ -34,7 +34,11 @@ var x_sel_start;
 var x_sel_end;
 var y_sel_start;
 var y_sel_end;
-
+var group_sel_drag = false;
+var deltaX = 0;
+var deltaY = 0;
+var x_sel_drag;
+var y_sel_drag;
 
 
 function setup() {
@@ -139,6 +143,27 @@ function draw() {
   pop();
 
 
+}
+
+
+function showTempManual(){
+
+}
+
+
+
+function groupDrag(dX, dY){
+    var x = dX || deltaX;
+    var y = dY || deltaY;
+
+    if(group_sel_drag == 1){
+      for (var i = 0; i < nodes.length; i++) {
+        if(nodes[i].locked){
+          nodes[i].x += x;
+          nodes[i].y += y;
+        }
+      }
+    }
 }
 
 
@@ -688,6 +713,14 @@ function isTheSamePath(path, end_node){
 
 //check if the mouse is over canvas or not
 function mouseMoved(){
+
+  if(tool == 'select' && group_sel_drag == true){
+    calculateDeltas();
+    groupDrag();
+
+  }
+
+
   if(mouseX < w && mouseY < h){
     overCanvas = true;
   }
@@ -695,8 +728,8 @@ function mouseMoved(){
     overCanvas = false;
   }
 }
-var x_sel_drag;
-var y_sel_drag;
+
+
 function mouseDragged() {
 
     if (mouseButton == CENTER){
@@ -706,19 +739,7 @@ function mouseDragged() {
     switch (tool) {
       case 'node':
           dragging = true;
-          console.log(LockCount());
           // $("input:text").hide();
-          if(LockCount() > 1){
-
-            for(var i=0; i<nodes.length; i++){
-                if(nodes[i].locked){
-                  x_sel_drag = mouseX - nodes[i].xOffset;
-                  y_sel_drag = mouseY - nodes[i].yOffset;
-                  break;
-                }
-            }
-
-          }else {
             for(var i=0; i<nodes.length; i++){
                 if(nodes[i].locked){
                     nodes[i].x = mouseX - nodes[i].xOffset;
@@ -726,8 +747,6 @@ function mouseDragged() {
                     nodeDragged = nodes[i];
                 }
             }
-          }
-
 
         break;
 
@@ -781,6 +800,8 @@ function mouseReleased() {
       }
 
       selecting = false;
+      group_sel_drag = false;
+      deltaCounter = 0;
       break;
   }
 }
@@ -814,6 +835,46 @@ function currentNodeF(){
   }
 }
 
+var refX = 0;
+var refY = 0;
+var deltaCounter = 0;
+
+function calculateDeltas(){
+
+
+  for (var i = 0; i < nodes.length; i++) {
+
+    if(nodes[i].locked){
+      if(deltaCounter == 0){
+        refX = nodes[i].x;
+        refY = nodes[i].y;
+      }
+      deltaX = (mouseX - translateX) * (1 / scaleFactor) - nodes[i].x;
+      deltaY = (mouseY - translateY) * (1 / scaleFactor) - nodes[i].y;
+      deltaCounter++;
+      break;
+    }
+  }
+
+  group_sel_drag = true;
+}
+
+function UndoGroupDrag(){
+
+  var x;
+  var y;
+  for (var i = 0; i < nodes.length; i++) {
+    if(nodes[i].locked){
+
+      x = refX - nodes[i].x;
+      y = refY - nodes[i].y;
+      break;
+    }
+  }
+
+  groupDrag(x, y);
+}
+
 
 
 
@@ -835,11 +896,17 @@ function keyPressed() {
       }
     }
 
+    if(group_sel_drag == true){
+      UndoGroupDrag();
+      group_sel_drag = false;
+    }
+
 
 
   }
   if (keyCode === DELETE) {
 
+    //delete one node when mouse is over it
     if(mouseIsOnNode()){
       //delete the node from the array
       nodes.splice(overNow, 1);
@@ -865,28 +932,43 @@ function keyPressed() {
       }
     }
 
-    //TODO: delete more than one at a time
-    else if (LockCount() > 1) {
-
+    //if mouse isn't over node or there are multiple nodes selected
+    else{
+      var nodes_to_del = [];
+      //find the lockd nodes
       for (var i = 0; i < nodes.length; i++) {
-        if(nodes[i].locked){
-          nodes.splice(nodes[i], 1);
-          getPathsOfNode(nodes[i]);
-          for (var i = 0; i < pathsOfNode.length; i++) {
-            for (var j = 0; j < paths.length; j++) {
-              if(paths[j] == pathsOfNode[i])
-                paths.splice(j,1);
+        if(nodes[i].locked == true){
+          nodes_to_del.push(nodes[i]);
+        }
+      }
+
+      //delete the locked nodes (added to nodes_to_del)
+      for (var i = 0; i < nodes.length; i++) {
+        for (var j = 0; j < nodes_to_del.length; j++) {
+          if(nodes[i] == nodes_to_del[j]){
+            //before deleting a node, get the paths connecting to it
+            getPathsOfNode(nodes[i]);
+            nodes.splice(i,1);
+            //delete all the paths of the deleted node
+            for (var k = 0; k < pathsOfNode.length; k++) {
+              for (var l = 0; l < paths.length; l++) {
+                if(paths[l] == pathsOfNode[k]){
+                  paths.splice(l,1);
+                }
               }
             }
 
-          pathsOfNode = [];
-          currentPath = paths.length - 1;
-          if(paths.length == 0){
-            firstPath = true;
-            currentPath = 0;
+            pathsOfNode = [];
+            currentPath = paths.length - 1;
+            if(paths.length == 0){
+              firstPath = true;
+              currentPath = 0;
+            }
+
           }
         }
       }
+      nodes_to_del = [];
 
     }
 
@@ -919,6 +1001,11 @@ function keyPressed() {
     tool = 'node';
   }
 
+  if (key == 'M' && LockCount() > 1) {
+    group_sel_drag = true;
+    calculateDeltas();
+  }
+
   if (key == 'P') {
     $("input:radio[name='r'][value='path']").prop("checked",true);
     tool = 'path';
@@ -929,10 +1016,10 @@ function keyPressed() {
     tool = 'select';
   }
 
-  if (key == 'M') {
-    $("input:radio[name='r'][value='move']").prop("checked",true);
-    tool = 'move';
-  }
+  // if (key == 'M') {
+  //   $("input:radio[name='r'][value='move']").prop("checked",true);
+  //   tool = 'move';
+  // }
 
   if(tool == 'move')
     $('html,body').css('cursor','move');
