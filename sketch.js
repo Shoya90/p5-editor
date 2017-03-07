@@ -39,6 +39,9 @@ var deltaX = 0;
 var deltaY = 0;
 var x_sel_drag;
 var y_sel_drag;
+var thumbs_counter = 0;
+var historyNodeArray = [];
+var historyPathArray = [];
 
 
 function setup() {
@@ -49,6 +52,9 @@ function setup() {
   inp.id = "name";
   inp.parent("canvasContainer");
   inp.hide();
+
+  // setInterval(takeSnapshot, 5000);
+
   // if(!$("input:text").val()) {
   //    $("input:text").attr("placeholder", "Give it a name:");
   // }
@@ -370,16 +376,19 @@ function isThereNode(x,y){
 
 //function for handling zoom
 function mouseWheel(event) {
-  translateX -= mouseX;
-  translateY -= mouseY;
-  //if scroll up => scale set delta as 1.05, if scroll down, set it to 1/1.05
-  var delta = event.wheelDelta > 0 ? 1.05 : event.wheelDelta < 0 ? 1.0/1.05 : 1.0;
-  //mult delta to scale factor
-  scaleFactor *= delta;
-  translateX *= delta;
-  translateY *= delta;
-  translateX += mouseX;
-  translateY += mouseY;
+  if(overCanvas){
+    translateX -= mouseX;
+    translateY -= mouseY;
+    //if scroll up => scale set delta as 1.05, if scroll down, set it to 1/1.05
+    var delta = event.wheelDelta > 0 ? 1.05 : event.wheelDelta < 0 ? 1.0/1.05 : 1.0;
+    //mult delta to scale factor
+    scaleFactor *= delta;
+    translateX *= delta;
+    translateY *= delta;
+    translateX += mouseX;
+    translateY += mouseY;
+  }
+
 
 }
 
@@ -796,7 +805,6 @@ function mouseReleased() {
 
       mouseIsOverNode();
       if(overNow){
-        console.log(overNow);
       }
 
       selecting = false;
@@ -875,10 +883,72 @@ function UndoGroupDrag(){
   groupDrag(x, y);
 }
 
+function loadHistory(el){
+
+  var index;
+
+  if(el.srcElement == undefined){
+    //mozilla
+    index = el.target.id;
+  }else {
+    //chrome
+    index = el.srcElement.id;
+  }
+  nodes = _.clone(historyNodeArray[index]);
+  paths = _.clone(historyPathArray[index]);
+  translateX = _.clone(historyNodeArray[index].tX);
+  translateY = _.clone(historyNodeArray[index].tY);
+  scaleFactor = _.clone(historyNodeArray[index].scFa);
+  currentPath = _.clone(historyPathArray[index].curPth);
+}
+
+function takeSnapshot(){
+  var img;
+  var img_num;
+  var temp_div;
+  saveFrames("out", "png", 1, 60, function(data){
+
+    historyNodeArray[thumbs_counter] = _.clone(nodes);
+    historyNodeArray[thumbs_counter].tX = _.clone(translateX);
+    historyNodeArray[thumbs_counter].tY = _.clone(translateY);
+    historyNodeArray[thumbs_counter].scFa = _.clone(scaleFactor);
+    historyPathArray[thumbs_counter] = _.clone(paths);
+    historyPathArray[thumbs_counter].curPth = _.clone(currentPath);
+
+    img = createImg(data[0].imageData);
+    img.size(100,75);
+    img.id(thumbs_counter);
+    img.class("thumbs_img");
+
+    img_num = createSpan(thumbs_counter);
+    img_num.class('img_number');
+    temp_div = createDiv('');
+
+    img.parent(temp_div);
+    img_num.parent(temp_div);
+
+    temp_div.id(thumbs_counter);
+    temp_div.class('img_container');
+    temp_div.mouseClicked(loadHistory);
+
+    $("#thumbs").prepend($("#" + thumbs_counter + ""));
+    // $("#" + thumbs_counter + "").hide().prependTo("#thumbs").fadeIn();
+
+
+  });
+
+  thumbs_counter++;
+}
 
 
 
 function keyPressed() {
+
+  if (key == 'X') {
+    takeSnapshot();
+  }
+
+
   if (keyCode === ENTER) {
     // nodes[selectedIndex].name = $("input:text").val();
     // $("input:text").val("");
@@ -1015,6 +1085,8 @@ function keyPressed() {
     $("input:radio[name='r'][value='select']").prop("checked",true);
     tool = 'select';
   }
+
+
 
   // if (key == 'M') {
   //   $("input:radio[name='r'][value='move']").prop("checked",true);

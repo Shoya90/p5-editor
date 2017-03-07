@@ -7,6 +7,7 @@
   <script language="javascript" src="Node.js"></script>
   <script language="javascript" src="Path.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
   <link href="style.css" rel="stylesheet" >
   <!-- uncomment lines below to include extra p5 libraries -->
@@ -19,6 +20,10 @@
 
 <body>
     <div id="canvasContainer" oncontextmenu="return false;"></div>
+
+    <div id="thumbs">
+    </div>
+
     <br/><br/>
     <div id="tools">
       <b>Tools</b><br/>
@@ -28,6 +33,7 @@
       <input type="radio"  name="r" value="move"/> <b>pan</b> (or middle mouse button)
     </div>
     <br/>
+
 
     <!-- <div class="edit">
       name:
