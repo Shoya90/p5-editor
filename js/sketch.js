@@ -42,6 +42,8 @@ var y_sel_drag;
 var thumbs_counter = 0;
 var historyNodeArray = [];
 var historyPathArray = [];
+var histoty_pointer = undefined;
+var delete_counter = 0;
 
 
 function setup() {
@@ -52,6 +54,7 @@ function setup() {
   inp.id = "name";
   inp.parent("canvasContainer");
   inp.hide();
+
 
   // setInterval(takeSnapshot, 5000);
 
@@ -515,10 +518,6 @@ var locked_count = 0;
   return locked_count;
 }
 
-function functionName() {
-
-}
-
 function mousePressed() {
 
 var overOne = false;
@@ -885,6 +884,7 @@ function UndoGroupDrag(){
 
 function loadHistory(el){
 
+  console.log('load');
   var index;
 
   if(el.srcElement == undefined){
@@ -894,13 +894,72 @@ function loadHistory(el){
     //chrome
     index = el.srcElement.id;
   }
-  nodes = _.clone(historyNodeArray[index]);
-  paths = _.clone(historyPathArray[index]);
-  translateX = _.clone(historyNodeArray[index].tX);
-  translateY = _.clone(historyNodeArray[index].tY);
-  scaleFactor = _.clone(historyNodeArray[index].scFa);
-  currentPath = _.clone(historyPathArray[index].curPth);
+
+
+  index = parseInt(index);
+  if(histoty_pointer != undefined && index > histoty_pointer){
+    index -= delete_counter;
+  }
+
+  console.log(index, histoty_pointer);
+
+  nodes = _.cloneDeep(historyNodeArray[index]);
+  paths = _.cloneDeep(historyPathArray[index]);
+
+  paths.forEach(function(path){
+    path.setEndNode(nodes[path.getEndNode().name]);
+    path.startNode = nodes[path.getStartNode().name];
+  });
+  translateX = _.cloneDeep(historyNodeArray[index].tX);
+  translateY = _.cloneDeep(historyNodeArray[index].tY);
+  scaleFactor = _.cloneDeep(historyNodeArray[index].scFa);
+  currentPath = _.cloneDeep(historyPathArray[index].curPth);
+
+  //select this thumb
+  $("#" + index  + " > span").attr('class', 'img_number_selected');
+
+  //unselect every other thumb
+  for (var i = 0; i < historyNodeArray.length; i++) {
+    if(i != index){
+      $("#" + i  + " > span").attr('class', 'img_number');
+    }
+
+  }
+
 }
+
+function deleteHistory(el){
+
+  var index;
+
+  if(el.srcElement == undefined){
+    //mozilla
+    index = el.target.id;
+  }else {
+    //chrome
+    index = el.srcElement.id;
+  }
+
+  var parent = index.substr(6);
+  console.log(parent);
+
+  parent = parseInt(parent);
+  if(delete_counter != 0 && parent > histoty_pointer){
+    index -= delete_counter;
+  }
+
+  historyNodeArray.splice(parent,1);
+  historyPathArray.splice(parent,1);
+
+  histoty_pointer = parent;
+  delete_counter++;
+
+  $("#" + index).parent().hide("slow", function(){ $(this).remove(); })
+
+  el.stopPropagation();
+
+}
+
 
 function takeSnapshot(){
   var img;
@@ -908,17 +967,22 @@ function takeSnapshot(){
   var temp_div;
   saveFrames("out", "png", 1, 60, function(data){
 
-    historyNodeArray[thumbs_counter] = _.clone(nodes);
-    historyNodeArray[thumbs_counter].tX = _.clone(translateX);
-    historyNodeArray[thumbs_counter].tY = _.clone(translateY);
-    historyNodeArray[thumbs_counter].scFa = _.clone(scaleFactor);
-    historyPathArray[thumbs_counter] = _.clone(paths);
-    historyPathArray[thumbs_counter].curPth = _.clone(currentPath);
+    historyNodeArray[thumbs_counter] = _.cloneDeep(nodes);
+    historyNodeArray[thumbs_counter].tX = _.cloneDeep(translateX);
+    historyNodeArray[thumbs_counter].tY = _.cloneDeep(translateY);
+    historyNodeArray[thumbs_counter].scFa = _.cloneDeep(scaleFactor);
+    historyPathArray[thumbs_counter] = _.cloneDeep(paths);
+    historyPathArray[thumbs_counter].curPth = _.cloneDeep(currentPath);
 
     img = createImg(data[0].imageData);
     img.size(100,75);
     img.id(thumbs_counter);
     img.class("thumbs_img");
+
+    img_delete = createImg('images/ic_clear_white_18px.svg');
+    img_delete.id('delete' + thumbs_counter);
+    img_delete.class('delete_ico');
+    // img_delete.mouseClicked(deleteHistory);
 
     img_num = createSpan(thumbs_counter);
     img_num.class('img_number');
@@ -926,13 +990,20 @@ function takeSnapshot(){
 
     img.parent(temp_div);
     img_num.parent(temp_div);
+    img_delete.parent(temp_div);
 
     temp_div.id(thumbs_counter);
     temp_div.class('img_container');
     temp_div.mouseClicked(loadHistory);
 
     $("#thumbs").prepend($("#" + thumbs_counter + ""));
-    // $("#" + thumbs_counter + "").hide().prependTo("#thumbs").fadeIn();
+
+    //unselect every thumb
+    for (var i = 0; i < historyNodeArray.length; i++) {
+      $("#" + i  + " > span").attr('class', 'img_number');
+    }
+    //select the newest thumb
+    $("#" + thumbs_counter  + " > span").attr('class', 'img_number_selected');
 
 
   });

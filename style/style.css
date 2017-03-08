@@ -45,9 +45,21 @@ input {
   bottom: 56px;
   color: #cecece;
   font-size: 12px;
-  -moz-transition: all 0.3s;
-  -webkit-transition: all 0.3s;
-  transition: all 0.3s;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
+
+}
+
+.img_number_selected{
+  position: relative;
+  bottom: 60px;
+  color: rgb(255, 255, 255);
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  font-size: 12px;
+    font-weight: bolder;
+  transition: all 0.1s;
 
 }
 
@@ -56,6 +68,30 @@ input {
   -webkit-transition: all 0.3s;
   transition: all 0.3s;
 }
+
+.img_container_selected, .thumbs_img_selected{
+  border-right: 2px solid rgb(231, 76, 60);
+  -moz-transition: all 0.3s;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
+.delete_ico{
+  position: relative;
+  bottom: 85px;
+  left: 79%;
+  -moz-transition: all 0.3s;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
+.delete_ico:hover{
+  background-color: #734dc1;
+  -moz-transition: all 0.3s;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
 
 
 #thumbs{
