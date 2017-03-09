@@ -45,6 +45,7 @@ input {
   bottom: 56px;
   color: #cecece;
   font-size: 12px;
+  
   -moz-transition: all 0.1s;
   -webkit-transition: all 0.1s;
   transition: all 0.1s;
@@ -53,12 +54,13 @@ input {
 
 .img_number_selected{
   position: relative;
-  bottom: 60px;
+  bottom: 56px;
   color: rgb(255, 255, 255);
+  font-size: 12px;
+  border-bottom: 1px solid;
+
   -moz-transition: all 0.1s;
   -webkit-transition: all 0.1s;
-  font-size: 12px;
-    font-weight: bolder;
   transition: all 0.1s;
 
 }

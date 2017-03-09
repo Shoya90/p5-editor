@@ -72,6 +72,10 @@ function Path(start, end){
     this.endNode = endNode;
   }
 
+  this.setStartNode = function(startNode){
+    this.startNode = startNode;
+  }
+
   this.isStarted = function(){
     return (this.started === true);
   }

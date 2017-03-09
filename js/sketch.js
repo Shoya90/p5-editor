@@ -42,8 +42,10 @@ var y_sel_drag;
 var thumbs_counter = 0;
 var historyNodeArray = [];
 var historyPathArray = [];
-var histoty_pointer = undefined;
-var delete_counter = 0;
+var histoty_pointer = [];
+var right_clk_toggle = 0;
+
+
 
 
 function setup() {
@@ -520,6 +522,18 @@ var locked_count = 0;
 
 function mousePressed() {
 
+if(mouseButton == RIGHT && right_clk_toggle == 0)  {
+  $("input:radio[name='r'][value='path']").prop("checked",true);
+  tool = 'path';
+  right_clk_toggle = 1;
+}else if (mouseButton == RIGHT && right_clk_toggle == 1) {
+  $("input:radio[name='r'][value='node']").prop("checked",true);
+  tool = 'node';
+  right_clk_toggle = 0;
+
+  cancelDrawing();
+}
+
 var overOne = false;
   for(var i=0; i<nodes.length; i++){
       if(nodes[i].status == true){
@@ -882,11 +896,9 @@ function UndoGroupDrag(){
   groupDrag(x, y);
 }
 
+
 function loadHistory(el){
-
-  console.log('load');
   var index;
-
   if(el.srcElement == undefined){
     //mozilla
     index = el.target.id;
@@ -894,44 +906,50 @@ function loadHistory(el){
     //chrome
     index = el.srcElement.id;
   }
-
-
   index = parseInt(index);
-  if(histoty_pointer != undefined && index > histoty_pointer){
-    index -= delete_counter;
-  }
-
-  console.log(index, histoty_pointer);
-
-  nodes = _.cloneDeep(historyNodeArray[index]);
-  paths = _.cloneDeep(historyPathArray[index]);
-
+  var index_temp = _.cloneDeep(index);
+  histoty_pointer.forEach(function(del){
+    if(index > del){
+      index_temp--;
+    }
+  });
+  console.log(index_temp);
+  nodes = _.cloneDeep(historyNodeArray[index_temp]);
+  paths = _.cloneDeep(historyPathArray[index_temp]);
   paths.forEach(function(path){
     path.setEndNode(nodes[path.getEndNode().name]);
-    path.startNode = nodes[path.getStartNode().name];
+    path.setStartNode(nodes[path.getStartNode().name]);
   });
-  translateX = _.cloneDeep(historyNodeArray[index].tX);
-  translateY = _.cloneDeep(historyNodeArray[index].tY);
-  scaleFactor = _.cloneDeep(historyNodeArray[index].scFa);
-  currentPath = _.cloneDeep(historyPathArray[index].curPth);
-
+  translateX = _.cloneDeep(historyNodeArray[index_temp].tX);
+  translateY = _.cloneDeep(historyNodeArray[index_temp].tY);
+  scaleFactor = _.cloneDeep(historyNodeArray[index_temp].scFa);
+  currentPath = _.cloneDeep(historyPathArray[index_temp].curPth);
   //select this thumb
   $("#" + index  + " > span").attr('class', 'img_number_selected');
-
+  $("#delete" + index).hide();
   //unselect every other thumb
-  for (var i = 0; i < historyNodeArray.length; i++) {
+  for (var i = 0; i < getThumbsId(); i++) {
     if(i != index){
       $("#" + i  + " > span").attr('class', 'img_number');
+      $("#delete" + i).show();
     }
-
   }
-
 }
 
+
+function getThumbsId(){
+  var thumbs_arr = [];
+  $('div','#thumbs').each(function(){
+      thumbs_arr.push($(this).attr('id'));
+    });
+    _.reverse(thumbs_arr);
+    return (_.max(thumbs_arr) + 1 );
+}
+
+
+
 function deleteHistory(el){
-
   var index;
-
   if(el.srcElement == undefined){
     //mozilla
     index = el.target.id;
@@ -939,34 +957,36 @@ function deleteHistory(el){
     //chrome
     index = el.srcElement.id;
   }
-
   var parent = index.substr(6);
-  console.log(parent);
-
   parent = parseInt(parent);
-  if(delete_counter != 0 && parent > histoty_pointer){
-    index -= delete_counter;
-  }
+  var x  = _.cloneDeep(parent);
+  histoty_pointer.forEach(function(del){
+    if(parent > del){
+      x--;
+    }
+  });
+  _.pullAt(historyNodeArray, [x, x]);
+  _.pullAt(historyPathArray, [x, x]);
 
-  historyNodeArray.splice(parent,1);
-  historyPathArray.splice(parent,1);
-
-  histoty_pointer = parent;
-  delete_counter++;
-
-  $("#" + index).parent().hide("slow", function(){ $(this).remove(); })
-
+  histoty_pointer.push(x);
+  $("#" + index).parent().hide("fast", function(){
+    $(this).remove();
+    // loadHistory(el);
+  });
   el.stopPropagation();
-
 }
 
+
+
+var busy = false;
 
 function takeSnapshot(){
   var img;
   var img_num;
   var temp_div;
   saveFrames("out", "png", 1, 60, function(data){
-
+    busy = true;
+    console.log(thumbs_counter);
     historyNodeArray[thumbs_counter] = _.cloneDeep(nodes);
     historyNodeArray[thumbs_counter].tX = _.cloneDeep(translateX);
     historyNodeArray[thumbs_counter].tY = _.cloneDeep(translateY);
@@ -982,7 +1002,7 @@ function takeSnapshot(){
     img_delete = createImg('images/ic_clear_white_18px.svg');
     img_delete.id('delete' + thumbs_counter);
     img_delete.class('delete_ico');
-    // img_delete.mouseClicked(deleteHistory);
+    img_delete.mouseClicked(deleteHistory);
 
     img_num = createSpan(thumbs_counter);
     img_num.class('img_number');
@@ -992,6 +1012,14 @@ function takeSnapshot(){
     img_num.parent(temp_div);
     img_delete.parent(temp_div);
 
+    $("#delete" + thumbs_counter).hide();
+    for (var i = 0; i < getThumbsId(); i++) {
+      if(i != thumbs_counter){
+        $("#delete" + i).show();
+      }
+
+    }
+
     temp_div.id(thumbs_counter);
     temp_div.class('img_container');
     temp_div.mouseClicked(loadHistory);
@@ -999,16 +1027,30 @@ function takeSnapshot(){
     $("#thumbs").prepend($("#" + thumbs_counter + ""));
 
     //unselect every thumb
-    for (var i = 0; i < historyNodeArray.length; i++) {
+    for (var i = 0; i < getThumbsId(); i++) {
       $("#" + i  + " > span").attr('class', 'img_number');
     }
     //select the newest thumb
     $("#" + thumbs_counter  + " > span").attr('class', 'img_number_selected');
 
-
+    busy = false;
+    thumbs_counter++;
   });
 
-  thumbs_counter++;
+
+
+}
+
+function cancelDrawing(){
+  if(paths.length != 0 && !paths[currentPath].isFinished()){
+    paths.splice(currentPath, 1);
+    currentPath = paths.length - 1;
+    //if there is no path, flag the first path and current path should be zero as well
+    if(paths.length == 0){
+      firstPath = true;
+      currentPath = 0;
+    }
+  }
 }
 
 
@@ -1016,7 +1058,10 @@ function takeSnapshot(){
 function keyPressed() {
 
   if (key == 'X') {
-    takeSnapshot();
+    if(!busy){
+      takeSnapshot();
+    }
+
   }
 
 
@@ -1027,15 +1072,7 @@ function keyPressed() {
   }
   if (keyCode === ESCAPE) {
     // $("input:text").fadeOut(200);
-    if(paths.length != 0 && !paths[currentPath].isFinished()){
-      paths.splice(currentPath, 1);
-      currentPath = paths.length - 1;
-      //if there is no path, flag the first path and current path should be zero as well
-      if(paths.length == 0){
-        firstPath = true;
-        currentPath = 0;
-      }
-    }
+    cancelDrawing();
 
     if(group_sel_drag == true){
       UndoGroupDrag();
