@@ -6,8 +6,14 @@
   <script language="javascript" src="js/Node.js"></script>
   <script language="javascript" src="js/Path.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <script src="https://cdn.jsdelivr.net/lodash/4.17.4/lodash.min.js"></script>
+  <!-- firebase -->
+  <script src="https://www.gstatic.com/firebasejs/3.7.1/firebase.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
   <link href="style/style.css" rel="stylesheet" >
   <!-- uncomment lines below to include extra p5 libraries -->
@@ -19,6 +25,7 @@
 </head>
 
 <body>
+
     <div id="canvasContainer" oncontextmenu="return false;"></div>
 
     <div id="thumbs">
@@ -31,8 +38,10 @@
       <input type="radio"  name="r" value="path"/> <b>path</b> (p on keyboard)
       <input type="radio"  name="r" value="select"/> <b>group select</b> (s on keyboard)
       <input type="radio"  name="r" value="move"/> <b>pan</b> (or middle mouse button)
+      <input type="button" value="snapshot!" class="snapshot" id="snapshot">
     </div>
-    <br/>
+
+    <input type="button" value="logout" class="logout" id="logout">
 
 
     <!-- <div class="edit">

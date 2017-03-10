@@ -44,11 +44,25 @@ var historyNodeArray = [];
 var historyPathArray = [];
 var histoty_pointer = [];
 var right_clk_toggle = 0;
-
-
+var database;
+var ref;
+var auth;
+var userId;
+var busy = false;
 
 
 function setup() {
+
+  // $('#memberModal').modal({show: "slide", modal: true});
+  // modal_check = ($("#memberModal").data('bs.modal') || {}).isShown;
+  //
+  // $('#close').on('click', function(event) {
+  //   modal_check = false;
+  // });
+  //
+
+
+
   var c = createCanvas(w, h);
   c.parent("canvasContainer");
 
@@ -73,7 +87,55 @@ function setup() {
         $('html,body').css('cursor','auto');
   });
 
-  //  frameRate(1);
+  // firebase setting
+  var config = {
+    apiKey: "AIzaSyB-V-3OBLvHgMNInk1sad3A6KtyEM6wx_g",
+    authDomain: "p5-editor-test.firebaseapp.com",
+    databaseURL: "https://p5-editor-test.firebaseio.com",
+    storageBucket: "p5-editor-test.appspot.com",
+    messagingSenderId: "967415691707"
+  };
+  firebase.initializeApp(config);
+  auth = firebase.auth();
+  database = firebase.database();
+  ref = database.ref('snapshot');
+
+  // $('#login').on('click', function(event) {
+  //   email = $("#email").val();
+  //   pass = $("#password").val();
+  //   var promise = auth.signInWithEmailAndPassword(email, pass);
+  //   promise.catch(function(err){
+  //     console.log(err);
+  //   });
+  //   modal_check = false;
+  // });
+
+  $('#logout').on('click', function(event) {
+    auth.signOut();
+    window.location.replace("login.html");
+  });
+
+  $('#snapshot').on('click', function(event) {
+    takeSnapshot();
+
+  });
+
+
+
+  auth.onAuthStateChanged(function(u){
+    if(u){
+      console.log(u.email);
+      userId = u.uid;
+    }else {
+      userId = undefined;
+      window.location.replace("login.html");
+    }
+
+  });
+
+
+
+
 
 }
 
@@ -153,11 +215,6 @@ function draw() {
 
   pop();
 
-
-}
-
-
-function showTempManual(){
 
 }
 
@@ -924,6 +981,7 @@ function loadHistory(el){
   translateY = _.cloneDeep(historyNodeArray[index_temp].tY);
   scaleFactor = _.cloneDeep(historyNodeArray[index_temp].scFa);
   currentPath = _.cloneDeep(historyPathArray[index_temp].curPth);
+
   //select this thumb
   $("#" + index  + " > span").attr('class', 'img_number_selected');
   $("#delete" + index).hide();
@@ -965,34 +1023,37 @@ function deleteHistory(el){
       x--;
     }
   });
-  _.pullAt(historyNodeArray, [x, x]);
-  _.pullAt(historyPathArray, [x, x]);
 
-  histoty_pointer.push(x);
+  historyNodeArray.splice(x,1);
+  historyPathArray.splice(x,1);
+
+  console.log(historyNodeArray);
+
+
+  histoty_pointer.push(parent);
   $("#" + index).parent().hide("fast", function(){
     $(this).remove();
-    // loadHistory(el);
   });
   el.stopPropagation();
 }
 
 
-
-var busy = false;
-
 function takeSnapshot(){
   var img;
   var img_num;
   var temp_div;
+
+  $("#snapshot").prop("disabled", true);
+  $("#snapshot").addClass('busy');
   saveFrames("out", "png", 1, 60, function(data){
     busy = true;
-    console.log(thumbs_counter);
-    historyNodeArray[thumbs_counter] = _.cloneDeep(nodes);
-    historyNodeArray[thumbs_counter].tX = _.cloneDeep(translateX);
-    historyNodeArray[thumbs_counter].tY = _.cloneDeep(translateY);
-    historyNodeArray[thumbs_counter].scFa = _.cloneDeep(scaleFactor);
-    historyPathArray[thumbs_counter] = _.cloneDeep(paths);
-    historyPathArray[thumbs_counter].curPth = _.cloneDeep(currentPath);
+
+    historyNodeArray[historyNodeArray.length] = _.cloneDeep(nodes);
+    historyNodeArray[historyNodeArray.length - 1].tX = _.cloneDeep(translateX);
+    historyNodeArray[historyNodeArray.length - 1].tY = _.cloneDeep(translateY);
+    historyNodeArray[historyNodeArray.length - 1].scFa = _.cloneDeep(scaleFactor);
+    historyPathArray[historyPathArray.length] = _.cloneDeep(paths);
+    historyPathArray[historyPathArray.length - 1].curPth = _.cloneDeep(currentPath);
 
     img = createImg(data[0].imageData);
     img.size(100,75);
@@ -1033,8 +1094,24 @@ function takeSnapshot(){
     //select the newest thumb
     $("#" + thumbs_counter  + " > span").attr('class', 'img_number_selected');
 
-    busy = false;
+
+
+    var date = new Date();
+    date = date.getTime();
+    var data = {
+      number: thumbs_counter,
+      image: data[0].imageData,
+      date: date,
+      userId: userId
+    }
+
+    ref.push(data);
+
+
     thumbs_counter++;
+    $("#snapshot").removeAttr('disabled');
+    $("#snapshot").removeClass('busy');
+    $("#snapshot").addClass('snapshot');
   });
 
 
