@@ -49,19 +49,10 @@ var ref;
 var auth;
 var userId;
 var busy = false;
-
+var projectId = undefined;
+var new_project = true;
 
 function setup() {
-
-  // $('#memberModal').modal({show: "slide", modal: true});
-  // modal_check = ($("#memberModal").data('bs.modal') || {}).isShown;
-  //
-  // $('#close').on('click', function(event) {
-  //   modal_check = false;
-  // });
-  //
-
-
 
   var c = createCanvas(w, h);
   c.parent("canvasContainer");
@@ -98,17 +89,19 @@ function setup() {
   firebase.initializeApp(config);
   auth = firebase.auth();
   database = firebase.database();
-  ref = database.ref('snapshot');
 
-  // $('#login').on('click', function(event) {
-  //   email = $("#email").val();
-  //   pass = $("#password").val();
-  //   var promise = auth.signInWithEmailAndPassword(email, pass);
-  //   promise.catch(function(err){
-  //     console.log(err);
-  //   });
-  //   modal_check = false;
-  // });
+  auth.onAuthStateChanged(function(u){
+    if(u){
+      console.log(u.email);
+      userId = u.uid;
+      ref_Project = database.ref('snapshot/users/' + userId + '/' + 'projects');
+
+    }else {
+      userId = undefined;
+      window.location.replace("login.html");
+    }
+
+  });
 
   $('#logout').on('click', function(event) {
     auth.signOut();
@@ -117,26 +110,45 @@ function setup() {
 
   $('#snapshot').on('click', function(event) {
     takeSnapshot();
-
   });
 
+  $('#load').on('click', function(event) {
+    ref_Project.on('value', gotData, errData);
+  });
 
+  function gotData(data){
+    var loadeds = selectAll('.loaded');
+    for (var i = 0; i < loadeds.length; i++) {
+      loadeds[i].remove();
+    }
+    var projects = $.map(data.val(), function(value, index) {
+      return [value];
+    });
+    console.log(projects);
 
-  auth.onAuthStateChanged(function(u){
-    if(u){
-      console.log(u.email);
-      userId = u.uid;
+    if(projects.length != 0){
+      projects.forEach(function(project){
+        var th = $.map(project, function(value, index) {
+          return [value];
+        });
+        var p = createSpan(project.name + '  :  ' + (th.length - 2) + ' snapshots');
+        p.class('loaded');
+        p.parent('history_loaded');
+
+      });
     }else {
-      userId = undefined;
-      window.location.replace("login.html");
+      var p = createSpan('no project yet');
+      p.class('loaded');
+      p.parent('history_loaded');
     }
 
-  });
+  }
+
+}
 
 
-
-
-
+function errData(err){
+  console.log(err);
 }
 
 function draw() {
@@ -1038,85 +1050,110 @@ function deleteHistory(el){
 }
 
 
+var project_name;
+
 function takeSnapshot(){
   var img;
   var img_num;
   var temp_div;
+  project_name = $('#project_name').val();
 
-  $("#snapshot").prop("disabled", true);
-  $("#snapshot").addClass('busy');
-  saveFrames("out", "png", 1, 60, function(data){
-    busy = true;
+  if(project_name != ''){
+    $("#snapshot").prop("disabled", true);
+    $("#snapshot").addClass('busy');
+    saveFrames("out", "png", 1, 60, function(data){
+      busy = true;
 
-    historyNodeArray[historyNodeArray.length] = _.cloneDeep(nodes);
-    historyNodeArray[historyNodeArray.length - 1].tX = _.cloneDeep(translateX);
-    historyNodeArray[historyNodeArray.length - 1].tY = _.cloneDeep(translateY);
-    historyNodeArray[historyNodeArray.length - 1].scFa = _.cloneDeep(scaleFactor);
-    historyPathArray[historyPathArray.length] = _.cloneDeep(paths);
-    historyPathArray[historyPathArray.length - 1].curPth = _.cloneDeep(currentPath);
+      historyNodeArray[historyNodeArray.length] = _.cloneDeep(nodes);
+      historyNodeArray[historyNodeArray.length - 1].tX = _.cloneDeep(translateX);
+      historyNodeArray[historyNodeArray.length - 1].tY = _.cloneDeep(translateY);
+      historyNodeArray[historyNodeArray.length - 1].scFa = _.cloneDeep(scaleFactor);
+      historyPathArray[historyPathArray.length] = _.cloneDeep(paths);
+      historyPathArray[historyPathArray.length - 1].curPth = _.cloneDeep(currentPath);
 
-    img = createImg(data[0].imageData);
-    img.size(100,75);
-    img.id(thumbs_counter);
-    img.class("thumbs_img");
+      img = createImg(data[0].imageData);
+      img.size(100,75);
+      img.id(thumbs_counter);
+      img.class("thumbs_img");
 
-    img_delete = createImg('images/ic_clear_white_18px.svg');
-    img_delete.id('delete' + thumbs_counter);
-    img_delete.class('delete_ico');
-    img_delete.mouseClicked(deleteHistory);
+      img_delete = createImg('images/ic_clear_white_18px.svg');
+      img_delete.id('delete' + thumbs_counter);
+      img_delete.class('delete_ico');
+      img_delete.mouseClicked(deleteHistory);
 
-    img_num = createSpan(thumbs_counter);
-    img_num.class('img_number');
-    temp_div = createDiv('');
+      img_num = createSpan(thumbs_counter);
+      img_num.class('img_number');
+      temp_div = createDiv('');
 
-    img.parent(temp_div);
-    img_num.parent(temp_div);
-    img_delete.parent(temp_div);
+      img.parent(temp_div);
+      img_num.parent(temp_div);
+      img_delete.parent(temp_div);
 
-    $("#delete" + thumbs_counter).hide();
-    for (var i = 0; i < getThumbsId(); i++) {
-      if(i != thumbs_counter){
-        $("#delete" + i).show();
+      $("#delete" + thumbs_counter).hide();
+      for (var i = 0; i < getThumbsId(); i++) {
+        if(i != thumbs_counter){
+          $("#delete" + i).show();
+        }
+
       }
 
-    }
+      temp_div.id(thumbs_counter);
+      temp_div.class('img_container');
+      temp_div.mouseClicked(loadHistory);
 
-    temp_div.id(thumbs_counter);
-    temp_div.class('img_container');
-    temp_div.mouseClicked(loadHistory);
+      $("#thumbs").prepend($("#" + thumbs_counter + ""));
 
-    $("#thumbs").prepend($("#" + thumbs_counter + ""));
-
-    //unselect every thumb
-    for (var i = 0; i < getThumbsId(); i++) {
-      $("#" + i  + " > span").attr('class', 'img_number');
-    }
-    //select the newest thumb
-    $("#" + thumbs_counter  + " > span").attr('class', 'img_number_selected');
+      //unselect every thumb
+      for (var i = 0; i < getThumbsId(); i++) {
+        $("#" + i  + " > span").attr('class', 'img_number');
+      }
+      //select the newest thumb
+      $("#" + thumbs_counter  + " > span").attr('class', 'img_number_selected');
 
 
 
-    var date = new Date();
-    date = date.getTime();
-    var data = {
-      number: thumbs_counter,
-      image: data[0].imageData,
-      date: date,
-      userId: userId
-    }
+      var now = new Date();
+      now = now.getTime();
 
-    ref.push(data);
+      var project = {
+        name: project_name,
+        date : now
+      }
 
+      if(new_project){
+        ref_Project = database.ref('snapshot/users/' + userId + '/' + 'projects');
+        projectId = ref_Project.push(project);
+        ref_thumb = database.ref('snapshot/users/' + userId + '/' + 'projects/' + projectId.key);
+        new_project = false;
+        $("#project_name").prop('disabled', true);
+      }
 
-    thumbs_counter++;
-    $("#snapshot").removeAttr('disabled');
-    $("#snapshot").removeClass('busy');
-    $("#snapshot").addClass('snapshot');
-  });
+      var data = {
+        number: thumbs_counter,
+        image: data[0].imageData,
+        nodes : JSON.stringify(nodes),
+        paths : JSON.stringify(paths),
+        translateX: translateX,
+        translateY: translateY,
+        scaleFactor: scaleFactor,
+        currentPath: currentPath,
+        date: now
+      }
 
+      ref_thumb.push(data);
 
+      thumbs_counter++;
+      $("#snapshot").removeAttr('disabled');
+      $("#snapshot").removeClass('busy');
+      $("#snapshot").addClass('snapshot');
+    });
+
+  }else {
+    console.log('please enter a name for project!');
+  }
 
 }
+
 
 function cancelDrawing(){
   if(paths.length != 0 && !paths[currentPath].isFinished()){

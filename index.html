@@ -34,22 +34,32 @@
     <br/><br/>
     <div id="tools">
       <b>Tools</b><br/>
-      <input type="radio"  name="r" value="node"/> <b>node</b> (n on keyboard)
-      <input type="radio"  name="r" value="path"/> <b>path</b> (p on keyboard)
-      <input type="radio"  name="r" value="select"/> <b>group select</b> (s on keyboard)
-      <input type="radio"  name="r" value="move"/> <b>pan</b> (or middle mouse button)
-      <input type="button" value="snapshot!" class="snapshot" id="snapshot">
+      <!-- <input type="radio"  name="r" value="node"/> <b>node</b> <span class="button">(n on keyboard)</span>
+      <input type="radio"  name="r" value="path"/> <b>path</b> <span class="button">(p on keyboard)</span>
+      <input type="radio"  name="r" value="select"/> <b>group select</b> <span class="button">(s on keyboard)</span>
+      <input type="radio"  name="r" value="move"/> <b>pan</b> <span class="button">(middle mouse)</span> -->
+
+      <p>node:<span class="button">N</span></p>
+      <p>path:<span class="button">P</span></p>
+      <p>group select:<span class="button">S</span>
+      move (group):<span class="button">M</span></p>
+      <p>pan:<span class="button">middle mouse</span></p>
+      <p>snapshot:<span class="button">X</span></p>
+      <p>delete:<span class="button">DELETE</span></p>
+
     </div>
 
-    <input type="button" value="logout" class="logout" id="logout">
+    <div>
+      <input type="button" value="logout" class="logout" id="logout">
+      <br/>
+      <input type="button" value="snapshot!" class="snapshot" id="snapshot">
+      <input type="text" placeholder="project name" class="project_name" id="project_name">
+    </div>
 
+    <input type="button" value="load projects" class="load" id="load">
 
-    <!-- <div class="edit">
-      name:
-      <input type="text" id="name" value="">
-      plan:
-      <input type="text" id="plan" value="">
-    </div> -->
+    <div id="history_loaded"></div>
+
 
 </body>
 </html>
