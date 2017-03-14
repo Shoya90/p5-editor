@@ -15,14 +15,14 @@ function Path(start, end){
   this.yEndRect1;
   this.xEndRect2;
   this.yEndRect2;
-  var nodeSize = 24;
+  // var nodeSize = 24;
   this.isDrawing;
   this.shift = false;
   var temp;
   this.name;
 
   this.show = function(){
-    strokeWeight(4);
+    strokeWeight(2);
     stroke(this.color);
     if(this.endNode !== undefined){
       line(this.endNode.x, this.endNode.y, this.startNode.x, this.startNode.y);

@@ -1,6 +1,6 @@
-var w = 800;
+var w = 1000;
 var h = 600;
-var nodeSize = 24;
+var nodeSize = 12;
 var nodes = [];
 var inp;
 var selectedIndex  = 0;
@@ -51,6 +51,20 @@ var userId;
 var busy = false;
 var projectId = undefined;
 var new_project = true;
+var img;
+var original_img_width;
+var original_img_height;
+var elevator = false;
+var stairs = false;
+var entrance = false;
+var bathroom = false;
+var type = 'generic';
+
+function preload() {
+  img = loadImage("images/map4.gif");
+  original_img_height = img.height;
+  original_img_width = img.width;
+}
 
 function setup() {
 
@@ -62,6 +76,26 @@ function setup() {
   inp.parent("canvasContainer");
   inp.hide();
 
+  $('#generic').on('click', function(event) {
+    generic = true;
+    type = 'generic';
+  });
+  $('#elevator').on('click', function(event) {
+    elevator = true;
+    type = 'elevator';
+  });
+  $('#stairs').on('click', function(event) {
+    stairs = true;
+    type = 'stairs';
+  });
+  $('#entrance').on('click', function(event) {
+    entrance = true;
+    type = 'entrance';
+  });
+  $('#bathroom').on('click', function(event) {
+    bathroom = true;
+    type = 'bathroom';
+  });
 
   // setInterval(takeSnapshot, 5000);
 
@@ -151,6 +185,9 @@ function errData(err){
   console.log(err);
 }
 
+var imgX = 0;
+var imgY = 0;
+
 function draw() {
   background(color(44, 62, 80));
 
@@ -161,6 +198,11 @@ function draw() {
   scale(scaleFactor);
   //draw the grid
   drawGrid();
+
+  push();
+  tint(180, 180, 180, 100);
+  image(img, (-img.width + width) /2 + imgX,  (-img.height + height)/2 + imgY);
+  pop();
 
   tempNextNode();
 
@@ -461,6 +503,10 @@ function mouseWheel(event) {
     translateY *= delta;
     translateX += mouseX;
     translateY += mouseY;
+
+    //resize image
+    image(img, (-img.width + width) /2 + imgX,  (-img.height + height)/2 + imgY, img.width * delta, 0);
+
   }
 
 
@@ -469,11 +515,11 @@ function mouseWheel(event) {
 function drawGrid() {
 	stroke('rgba(111,111,111,.5)');
 	fill(120);
-	for (var x = -height* (1/scaleFactor) * 8; x < width * (1/scaleFactor) * 8; x+=w/20) {
+	for (var x = -height* (1/scaleFactor) * 8; x < width * (1/scaleFactor) * 8; x+=w/40) {
 		line(x, -height * (1/scaleFactor) * 8, x, height * (1/scaleFactor) * 8);
 		// text(Math.floor(map(x,-height* (1/scaleFactor), height * (1/scaleFactor), -h, h)), x+1, 12);
 	}
-	for (var y = -width* (1/scaleFactor) * 8; y < height * (1/scaleFactor) * 8; y+=w/20) {
+	for (var y = -width* (1/scaleFactor) * 8; y < height * (1/scaleFactor) * 8; y+=w/40) {
 		line(-width * (1/scaleFactor) * 8, y, width * (1/scaleFactor) * 8, y);
 		// text(Math.floor(map(y,-width* (1/scaleFactor), width * (1/scaleFactor), -w, w)), 1, y+12);
 	}
@@ -489,13 +535,13 @@ function mouseIsOverNode(){
               overNIndex = i;
               if(!nodes[i].locked) {
                 nodes[i].border = 255;
-                nodes[i].fill = 153;
+                // nodes[i].fill = 153;
               }
               calculateDots(nodes[i]);
               // break;
           } else {
             nodes[i].border = 153;
-            nodes[i].fill = 153;
+            // nodes[i].fill = 153;
             nodes[i].status = false;
             overNow = undefined;
             // overNode = {};
@@ -633,13 +679,33 @@ var overOne = false;
         if(nodes.length > 0) {
             //if mouse is over one node
             if(overOne){
+
+                switch (type) {
+                  case 'elevator':
+                  nodes[overNow].setType('elevator');
+                    break;
+                  case 'stairs':
+                  nodes[overNow].setType('stairs');
+                    break;
+                  case 'entrance':
+                  nodes[overNow].setType('entrance');
+                    break;
+                  case 'bathroom':
+                  nodes[overNow].setType('bathroom');
+                    break;
+                  case 'generic':
+                  nodes[overNow].setType('generic');
+                      break;
+                    // default: nodes[overNow].setType('generic');
+                }
+
                 for(var i=0; i<nodes.length; i++){
                     //find the node mouse is over
                     //set it's status to true ( is being hovered )
                     //give it a border
                     if(nodes[i].status){
                         nodes[i].locked = true;
-                        nodes[i].fill = 255;
+                        // nodes[i].fill = 255;
                         selectedIndex = i;
                     }else{
                         nodes[i].locked = false;
@@ -703,7 +769,7 @@ var overOne = false;
               paths.push(newPath);
 
             }else {
-              nodes[overNow].setFill = color(231, 76, 60);
+              // nodes[overNow].setFill = color(231, 76, 60);
             }
 
           }
@@ -1286,6 +1352,9 @@ function keyPressed() {
     scaleFactor = 1;
     translateX = 0.0;
     translateY = 0.0;
+
+
+
   }
 
   if (key == 'N') {

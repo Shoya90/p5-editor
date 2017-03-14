@@ -41,6 +41,26 @@ input {
     margin: 10px;
 }
 
+#elevator{
+  margin: 10px;
+  background-color: rgb(230, 126, 34);
+}
+
+#stairs{
+  margin: 10px;
+  background-color: rgb(243, 156, 18);
+}
+
+#bathroom{
+  margin: 10px;
+  background-color: rgb(192, 57, 43);
+}
+
+#entrance{
+  margin: 10px;
+  background-color: rgb(155, 89, 182);
+}
+
 .load{
     background-color: #316666;
     color: #fff;
@@ -86,9 +106,22 @@ input {
 
 #tools{
   padding: 10px;
-  width: 50%;
+  width: 25%;
   float: left;
 }
+
+#controls{
+  padding: 10px;
+  width: 25%;
+  float: left;
+}
+
+.firebase{
+  padding: 10px;
+  width: 33%;
+  float: left;
+}
+
 
 .edit{
   padding: 10px;
@@ -163,7 +196,7 @@ input {
   overflow-y: auto;
   position: absolute;
   top: 0;
-  left: 800;
+  left: 1000;
   width: 140px;
   background-color: rgb(41, 128, 185);
   height: 600px;

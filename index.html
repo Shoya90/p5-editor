@@ -2,24 +2,26 @@
 <head>
   <meta charset="UTF-8">
   <script language="javascript" type="text/javascript" src="libraries/p5.js"></script>
+  <script language="javascript" src="libraries/p5.svg.js"></script>
 
+  <script language="javascript" type="text/javascript" src="js/sketch.js"></script>
   <script language="javascript" src="js/Node.js"></script>
   <script language="javascript" src="js/Path.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <script src="https://cdn.jsdelivr.net/lodash/4.17.4/lodash.min.js"></script>
   <!-- firebase -->
   <script src="https://www.gstatic.com/firebasejs/3.7.1/firebase.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
+
   <link href="style/style.css" rel="stylesheet" >
   <!-- uncomment lines below to include extra p5 libraries -->
   <script language="javascript" src="libraries/p5.dom.js"></script>
   <!--<script language="javascript" src="libraries/p5.sound.js"></script>-->
-  <script language="javascript" type="text/javascript" src="js/sketch.js"></script>
+
   <!-- this line removes any default padding and style. you might only need one of these values set. -->
   <style> body {padding: 0; margin: 0;} </style>
 </head>
@@ -43,22 +45,38 @@
       <p>path:<span class="button">P</span></p>
       <p>group select:<span class="button">S</span>
       move (group):<span class="button">M</span></p>
+      <p>reset view:<span class="button">R</span></p>
       <p>pan:<span class="button">middle mouse</span></p>
       <p>snapshot:<span class="button">X</span></p>
       <p>delete:<span class="button">DELETE</span></p>
 
     </div>
 
-    <div>
+    <div id="controls">
+      <input type="button" value="generic" class="_ctrl" id="generic">
+      <br/>
+      <input type="button" value="elevator" class="_ctrl" id="elevator">
+      <br/>
+      <input type="button" value="stairs" class="_ctrl" id="stairs">
+      <br/>
+      <input type="button" value="entrance" class="_ctrl" id="entrance">
+      <br/>
+      <input type="button" value="bathroom" class="_ctrl" id="bathroom">
+      <br/>
+    </div>
+
+    <div class="firebase">
       <input type="button" value="logout" class="logout" id="logout">
       <br/>
       <input type="button" value="snapshot!" class="snapshot" id="snapshot">
       <input type="text" placeholder="project name" class="project_name" id="project_name">
+
+      <input type="button" value="load projects" class="load" id="load">
+
+      <div id="history_loaded"></div>
     </div>
 
-    <input type="button" value="load projects" class="load" id="load">
 
-    <div id="history_loaded"></div>
 
 
 </body>
