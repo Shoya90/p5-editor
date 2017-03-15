@@ -1,4 +1,4 @@
-var w = 1000;
+var w = 1140;
 var h = 600;
 var nodeSize = 12;
 var nodes = [];
@@ -76,24 +76,45 @@ function setup() {
   inp.parent("canvasContainer");
   inp.hide();
 
+  $('#generic').addClass('button_selected');
   $('#generic').on('click', function(event) {
-    generic = true;
+    $('#generic').addClass('button_selected');
+    $('#elevator').removeClass('button_selected');
+    $('#stairs').removeClass('button_selected');
+    $('#entrance').removeClass('button_selected');
+    $('#bathroom').removeClass('button_selected');
     type = 'generic';
   });
   $('#elevator').on('click', function(event) {
-    elevator = true;
+    $('#generic').removeClass('button_selected');
+    $('#elevator').addClass('button_selected');
+    $('#stairs').removeClass('button_selected');
+    $('#entrance').removeClass('button_selected');
+    $('#bathroom').removeClass('button_selected');
     type = 'elevator';
   });
   $('#stairs').on('click', function(event) {
-    stairs = true;
+    $('#generic').removeClass('button_selected');
+    $('#elevator').removeClass('button_selected');
+    $('#stairs').addClass('button_selected');
+    $('#entrance').removeClass('button_selected');
+    $('#bathroom').removeClass('button_selected');
     type = 'stairs';
   });
   $('#entrance').on('click', function(event) {
-    entrance = true;
+    $('#generic').removeClass('button_selected');
+    $('#elevator').removeClass('button_selected');
+    $('#stairs').removeClass('button_selected');
+    $('#entrance').addClass('button_selected');
+    $('#bathroom').removeClass('button_selected');
     type = 'entrance';
   });
   $('#bathroom').on('click', function(event) {
-    bathroom = true;
+    $('#generic').removeClass('button_selected');
+    $('#elevator').removeClass('button_selected');
+    $('#stairs').removeClass('button_selected');
+    $('#entrance').removeClass('button_selected');
+    $('#bathroom').addClass('button_selected');
     type = 'bathroom';
   });
 

@@ -41,24 +41,65 @@ input {
     margin: 10px;
 }
 
+#generic{
+  margin: 10px;
+  width: 100px;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
+}
+
 #elevator{
   margin: 10px;
   background-color: rgb(230, 126, 34);
+  width: 100px;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
 }
 
 #stairs{
   margin: 10px;
   background-color: rgb(243, 156, 18);
+  width: 100px;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
 }
 
 #bathroom{
   margin: 10px;
   background-color: rgb(192, 57, 43);
+  width: 100px;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
 }
 
 #entrance{
   margin: 10px;
   background-color: rgb(155, 89, 182);
+  width: 100px;
+  -moz-transition: all 0.1s;
+  -webkit-transition: all 0.1s;
+  transition: all 0.1s;
+}
+
+#generic:hover, #elevator:hover, #stairs:hover, #bathroom:hover, #entrance:hover{
+  -moz-transform: scale(1.1);
+  -webkit-transform: scale(1.1);
+  transform: scale(1.1);
+  background-color: rgba(100, 100, 100, .6);
+
+}
+
+.button_selected{
+  -moz-transform: scale(1.1);
+  -webkit-transform: scale(1.1);
+  transform: scale(1.1);
+  margin: 10px;
+  width: 100px;
+  background-color: rgba(100, 100, 100, .6);
 }
 
 .load{
@@ -79,9 +120,6 @@ input {
   padding: 10px;
 }
 
-.project_name{
-
-}
 
 .snapshot{
     background-color: #2c8432;
@@ -196,7 +234,7 @@ input {
   overflow-y: auto;
   position: absolute;
   top: 0;
-  left: 1000;
+  left: 1140px;
   width: 140px;
   background-color: rgb(41, 128, 185);
   height: 600px;
